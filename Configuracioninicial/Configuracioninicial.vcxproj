@@ -89,12 +89,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLFW\include;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\glm;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLEW\include;C:\Users\atzin\OneDrive\Escritorio\Curso_Computacion_Grafica\External Libraries\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)/External Libraries/GLEW/include;$(SolutionDir)/External Libraries/GLFW/include;$(SolutionDir)/External Libraries/glm;$(SolutionDir)/External Libraries/assimp/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\atzin\OneDrive\Escritorio\Curso_Computacion_Grafica\External Libraries\assimp\lib;C:\Users\atzin\OneDrive\Escritorio\Curso_Computacion_Grafica\External Libraries\SOIL2\lib;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLFW\lib-vc2015;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLEW\lib\Release\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)/External Libraries/assimp/lib;$(SolutionDir)/External Libraries/GLEW/lib/Release/Win32;$(SolutionDir)/External Libraries/GLFW/lib-vc2015;$(SolutionDir)/External Libraries/SOIL2/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>soil2-debug.lib;assimp-vc140-mt.lib;opengl32.lib;glew32.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -106,12 +106,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLFW\include;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\glm;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLEW\include;C:\Users\atzin\OneDrive\Escritorio\Curso_Computacion_Grafica\External Libraries\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)/External Libraries/GLEW/include;$(SolutionDir)/External Libraries/GLFW/include;$(SolutionDir)/External Libraries/glm;$(SolutionDir)/External Libraries/assimp/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\atzin\OneDrive\Escritorio\Curso_Computacion_Grafica\External Libraries\assimp\lib;C:\Users\atzin\OneDrive\Escritorio\Curso_Computacion_Grafica\External Libraries\SOIL2\lib;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLFW\lib-vc2015;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLEW\lib\Release\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)/External Libraries/assimp/lib;$(SolutionDir)/External Libraries/GLEW/lib/Release/Win32;$(SolutionDir)/External Libraries/GLFW/lib-vc2015;$(SolutionDir)/External Libraries/SOIL2/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>soil2-debug.lib;assimp-vc140-mt.lib;opengl32.lib;glew32.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -121,12 +121,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLFW\include;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\glm;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLEW\include;C:\Users\atzin\OneDrive\Escritorio\Curso_Computacion_Grafica\External Libraries\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)/External Libraries/GLEW/include;$(SolutionDir)/External Libraries/GLFW/include;$(SolutionDir)/External Libraries/glm;$(SolutionDir)/External Libraries/assimp/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\atzin\OneDrive\Escritorio\Curso_Computacion_Grafica\External Libraries\assimp\lib;C:\Users\atzin\OneDrive\Escritorio\Curso_Computacion_Grafica\External Libraries\SOIL2\lib;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLFW\lib-vc2015;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLEW\lib\Release\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)/External Libraries/assimp/lib;$(SolutionDir)/External Libraries/GLEW/lib/Release/Win32;$(SolutionDir)/External Libraries/GLFW/lib-vc2015;$(SolutionDir)/External Libraries/SOIL2/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>soil2-debug.lib;assimp-vc140-mt.lib;opengl32.lib;glew32.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -138,12 +138,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLFW\include;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\glm;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLEW\include;C:\Users\atzin\OneDrive\Escritorio\Curso_Computacion_Grafica\External Libraries\assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)/External Libraries/GLEW/include;$(SolutionDir)/External Libraries/GLFW/include;$(SolutionDir)/External Libraries/glm;$(SolutionDir)/External Libraries/assimp/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\atzin\OneDrive\Escritorio\Curso_Computacion_Grafica\External Libraries\assimp\lib;C:\Users\atzin\OneDrive\Escritorio\Curso_Computacion_Grafica\External Libraries\SOIL2\lib;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLFW\lib-vc2015;C:\Users\atzin\OneDrive\Escritorio\Configuracioninicial\External Libraries\GLEW\lib\Release\Win32;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)/External Libraries/assimp/lib;$(SolutionDir)/External Libraries/GLEW/lib/Release/Win32;$(SolutionDir)/External Libraries/GLFW/lib-vc2015;$(SolutionDir)/External Libraries/SOIL2/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>soil2-debug.lib;assimp-vc140-mt.lib;opengl32.lib;glew32.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

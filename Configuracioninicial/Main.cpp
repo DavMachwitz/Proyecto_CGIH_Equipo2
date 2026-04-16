@@ -11,6 +11,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "Shader.h"
 #include "Camera.h"
+#include "Model.h"
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void MouseCallback(GLFWwindow* window, double xPos, double yPos);
@@ -24,6 +25,7 @@ GLfloat lastX = WIDTH / 2.0f;
 GLfloat lastY = HEIGHT / 2.0f;
 bool    keys[1024];
 bool    firstMouse = true;
+bool mouseCaptured = false; //para capturar el mouse (Con M) y permitir interactuar con la PC sin que se mueva la camara
 GLfloat deltaTime = 0.0f;
 GLfloat lastFrame = 0.0f;
 
@@ -87,7 +89,11 @@ int main()
     glEnable(GL_DEPTH_TEST);
 
     Shader shader("Shader/core.vs", "Shader/lamp.frag");
+    Shader shader1("Shader/modelLoading.vs", "Shader/modelLoading.frag");
 
+    Model sotano((char*)"Models/SotanoFI.obj");
+    Model reja((char*)"Models/reja.obj");
+    glm::mat4 projection = glm::perspective(camera.GetZoom(), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
     // =====================================================================
     //  CUADRICULA DE REFERENCIA
     //
@@ -215,6 +221,7 @@ int main()
 
         glClearColor(0.18f, 0.18f, 0.18f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
 
         shader.Use();
 
@@ -290,6 +297,15 @@ int main()
             glDrawArrays(GL_LINE_LOOP, 1, SEG);
         }
 
+        shader1.Use();
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+
+        glm::mat4 model(1);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+        //model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        sotano.Draw(shader1);
         glBindVertexArray(0);
         glfwSwapBuffers(window);
     }
@@ -307,23 +323,65 @@ void DoMovement()
     if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT]) camera.ProcessKeyboard(RIGHT, deltaTime);
 }
 
+void MouseCallback(GLFWwindow* window, double xPos, double yPos)
+{
+    if (!mouseCaptured) return;
+
+    if (firstMouse)
+    {
+        lastX = xPos;
+        lastY = yPos;
+        firstMouse = false;
+    }
+
+    GLfloat xOffset = xPos - lastX;
+    GLfloat yOffset = lastY - yPos;
+
+    lastX = xPos;
+    lastY = yPos;
+
+    camera.ProcessMouseMovement(xOffset, yOffset);
+}
+
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
-    if (key >= 0 && key < 1024)
     {
-        if (action == GLFW_PRESS)        keys[key] = true;
+        // Al presionar ESC, liberamos el mouse y dejamos de mover la cámara
+        mouseCaptured = false;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
+    if (key == GLFW_KEY_M && action == GLFW_PRESS)
+    {
+        // Al presionar M, capturamos el mouse para mover la cámara
+        mouseCaptured = true;
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        firstMouse = true; // Reiniciamos para evitar saltos bruscos al activar
+    }
+
+    if (key >= 0 && key < 1024) {
+        if (action == GLFW_PRESS) keys[key] = true;
         else if (action == GLFW_RELEASE) keys[key] = false;
     }
 }
-
-void MouseCallback(GLFWwindow* window, double xPos, double yPos)
-{
-    if (firstMouse) { lastX = xPos; lastY = yPos; firstMouse = false; }
-    GLfloat xOffset = (GLfloat)(xPos - lastX);   // FIX: cast explicito
-    GLfloat yOffset = (GLfloat)(lastY - yPos);     // FIX: cast explicito
-    lastX = (GLfloat)xPos;
-    lastY = (GLfloat)yPos;
-    camera.ProcessMouseMovement(xOffset, yOffset);
-}
+//void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode)
+//{
+//    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+//        glfwSetWindowShouldClose(window, GL_TRUE);
+//    if (key >= 0 && key < 1024)
+//    {
+//        if (action == GLFW_PRESS)        keys[key] = true;
+//        else if (action == GLFW_RELEASE) keys[key] = false;
+//    }
+//}
+//
+//void MouseCallback(GLFWwindow* window, double xPos, double yPos)
+//{
+//    if (firstMouse) { lastX = xPos; lastY = yPos; firstMouse = false; }
+//    GLfloat xOffset = (GLfloat)(xPos - lastX);   // FIX: cast explicito
+//    GLfloat yOffset = (GLfloat)(lastY - yPos);     // FIX: cast explicito
+//    lastX = (GLfloat)xPos;
+//    lastY = (GLfloat)yPos;
+//    camera.ProcessMouseMovement(xOffset, yOffset);
+//}

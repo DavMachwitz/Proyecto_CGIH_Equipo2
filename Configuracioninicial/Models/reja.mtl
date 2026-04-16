@@ -12,5 +12,5 @@ newmtl Material__25
 	Kd 0.7408 0.6443 0.0904
 	Ks 0.0000 0.0000 0.0000
 	Ke 0.0000 0.0000 0.0000
-	map_Ka C:\Users\Lap001\Desktop\reja.png
-	map_Kd C:\Users\Lap001\Desktop\reja.png
+	map_Ka reja.png
+	map_Kd reja.png
