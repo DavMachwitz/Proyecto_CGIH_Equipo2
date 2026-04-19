@@ -75,7 +75,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Planta Base - Atzin", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Planta Base", nullptr, nullptr);
     if (!window) { glfwTerminate(); return EXIT_FAILURE; }
     glfwMakeContextCurrent(window);
     glfwGetFramebufferSize(window, &SCREEN_WIDTH, &SCREEN_HEIGHT);
@@ -303,9 +303,16 @@ int main()
 
         glm::mat4 model(1);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-        //model = glm::scale(model, glm::vec3(0.5f, 0.5f, 0.5f));
+        //model = glm::scale(model, glm::vec3(1.5f, 1.5f, 1.5f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         sotano.Draw(shader1);
+       
+        
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(5.0f, 0.0f, 13.85f));
+        model = glm::scale(model, glm::vec3(0.11f, 0.097f, 0.12f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        reja.Draw(shader1);
         glBindVertexArray(0);
         glfwSwapBuffers(window);
     }
