@@ -134,6 +134,10 @@ int main()
     Model reja((char*)"Models/reja.obj");
     Model luzTecho((char*)"Models/luz_techo.obj");
     Model upstairs((char*)"Models/Upstairs.obj");
+    Model estatua1((char*)"Models/EstatuaEscalera.obj");
+    Model base1((char*)"Models/BaseEstatuaEscalera.obj");
+    Model estatua2((char*)"Models/EstatuaExamenes.obj");
+    Model base2((char*)"Models/BaseEstatuaExamenes.obj");
 
     glm::mat4 projection = glm::perspective(camera.GetZoom(), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
 
@@ -297,6 +301,32 @@ int main()
         model = glm::scale(model, glm::vec3(2.0f, 2.0f, 2.0f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         upstairs.Draw(shader1);
+
+        //Estatua escalera
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 2.488f));
+        //model = glm::scale(model, glm::vec3(0.11f, 0.097f, 0.12f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        base1.Draw(shader1);
+
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 2.5f));
+        //model = glm::scale(model, glm::vec3(0.11f, 0.097f, 0.12f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        estatua1.Draw(shader1);
+
+        //Estatua examenes
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, -0.5f));
+        //model = glm::scale(model, glm::vec3(0.11f, 0.097f, 0.12f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        base2.Draw(shader1);
+
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, -0.5f));
+        //model = glm::scale(model, glm::vec3(0.11f, 0.097f, 0.12f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        estatua2.Draw(shader1);
 
         // Luz de techo (Dibuja el modelo de la lámpara en la posición designada)
         model = glm::mat4(1);
