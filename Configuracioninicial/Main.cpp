@@ -294,13 +294,13 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         reja.Draw(shader1);
 
-        //Escaleras genericas
-        model = glm::mat4(1);
-        model = glm::translate(model, glm::vec3(-15.0f, 0.0f, 5.0f));
-        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(2.0f, 2.0f, 2.0f));
-        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        upstairs.Draw(shader1);
+        ////Escaleras genericas
+        //model = glm::mat4(1);
+        //model = glm::translate(model, glm::vec3(-15.0f, 0.0f, 5.0f));
+        //model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        //model = glm::scale(model, glm::vec3(2.0f, 2.0f, 2.0f));
+        //glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        //upstairs.Draw(shader1);
 
         //Estatua escalera
         model = glm::mat4(1);
