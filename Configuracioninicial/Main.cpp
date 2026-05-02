@@ -1,6 +1,13 @@
 ﻿// =====================================================================
 //  PROYECTO: Planta Base - Facultad
-//  Implementación: Sistema Día/Noche + Reflector Interactivo (Tecla F)
+//  Implementación: Sistema Día/Noche + Reflectores Múltiples (Tecla F)
+//
+//  TOTAL DE LUCES: 15 spotlights
+//    - 6 luces en cuadricula (3 X 2)
+//    - 9 luces extra individuales
+//
+//  IMPORTANTE: lamp.frag y modelLoading.frag DEBEN tener
+//    #define MAX_SPOTLIGHTS 16  (o mayor)
 // =====================================================================
 
 #include <iostream>
@@ -39,26 +46,21 @@ bool    mouseCaptured = true;
 bool    spotLightOn = false;
 
 // =====================================================================
-// SISTEMA DE HORAS DEL DIA (INTENSIDADES REALISTAS)
+// SISTEMA DE HORAS DEL DIA
 // =====================================================================
 struct TimeOfDayPreset {
     const char* name;
     glm::vec3   clearColor;
-    glm::vec3   tint;         // Intensidad de la luz general
+    glm::vec3   tint;
 };
 
 TimeOfDayPreset presets[3] = {
-    // 1 (Mañana): Cielo amanecer, luz al ~65%
     { "Manana", glm::vec3(0.87f, 0.72f, 0.62f), glm::vec3(0.65f, 0.55f, 0.45f) },
-
-    // 2 (Tarde): Cielo azul, luz al 100%
     { "Tarde",  glm::vec3(0.50f, 0.70f, 0.92f), glm::vec3(1.00f, 1.00f, 1.00f) },
-
-    // 3 (Noche): Cielo oscuro, luz al ~20%
     { "Noche",  glm::vec3(0.04f, 0.05f, 0.12f), glm::vec3(0.20f, 0.25f, 0.40f) },
 };
 
-int currentPreset = 1; // Arranca en Tarde por defecto
+int currentPreset = 1;
 
 // =====================================================================
 // PROTOTIPOS Y UTILIDADES
@@ -125,11 +127,9 @@ int main()
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     glEnable(GL_DEPTH_TEST);
 
-    // Carga de Shaders (Asegúrate de que tus archivos .vs y .frag estén actualizados)
     Shader shader("Shader/core.vs", "Shader/lamp.frag");
     Shader shader1("Shader/modelLoading.vs", "Shader/modelLoading.frag");
 
-    // Modelos
     Model sotano((char*)"Models/SotanoFI.obj");
     Model reja((char*)"Models/reja.obj");
     Model luzTecho((char*)"Models/luz_techo.obj");
@@ -141,16 +141,13 @@ int main()
 
     glm::mat4 projection = glm::perspective(camera.GetZoom(), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
 
-    // Geometría Procedural (Vértices de los edificios y piso)
+    // Geometría Procedural
     GLfloat pisoV[] = { mX(0.0f), 0.000f, mZ(0.0f), mX(42.5f), 0.000f, mZ(0.0f), mX(42.5f), 0.000f, mZ(27.0f), mX(0.0f), 0.000f, mZ(27.0f) };
     GLuint pisoI[] = { 0,1,2, 0,2,3 };
-
     GLfloat narV[] = { mX(8.5f), 0.002f, mZ(9.0f), mX(17.0f), 0.002f, mZ(9.0f), mX(17.0f), 0.002f, mZ(18.0f), mX(8.5f), 0.002f, mZ(18.0f) };
     GLuint narI[] = { 0,1,2, 0,2,3 };
-
     GLfloat azulV[] = { mX(34.0f), 0.002f, mZ(9.0f), mX(42.5f), 0.002f, mZ(9.0f), mX(42.5f), 0.002f, mZ(18.0f), mX(34.0f), 0.002f, mZ(18.0f) };
     GLuint azulI[] = { 0,1,2, 0,2,3 };
-
     GLfloat perimV[] = { mX(0.0f), 0.005f, mZ(0.0f), mX(42.5f), 0.005f, mZ(0.0f), mX(42.5f), 0.005f, mZ(27.0f), mX(0.0f), 0.005f, mZ(27.0f) };
     GLfloat lineaV[] = { mX(34.0f), 0.005f, mZ(0.0f), mX(34.0f), 0.005f, mZ(9.0f) };
 
@@ -187,11 +184,41 @@ int main()
     GLint projLoc = glGetUniformLocation(shader.Program, "projection");
 
     // =================================================================
-    // PARAMETROS DE LA LUZ DE TECHO (Puedes editar esto para mover el foco)
+    // PARAMETROS GENERALES DE LAS LUCES
     // =================================================================
-    glm::vec3 luzTechoPos = glm::vec3(0.0f, 5.2f, 0.0f); // Posición en X, Y, Z
-    glm::vec3 luzTechoScale = glm::vec3(0.5f);           // Tamaño del modelo
-    float     luzTechoRotY = 0.0f;                       // Rotación
+    glm::vec3 luzTechoPos = glm::vec3(0.0f, 5.2f, 10.0f); // Y referencia para la cuadricula
+    glm::vec3 luzTechoScale = glm::vec3(0.5f);
+    float     luzTechoRotY = 0.0f;
+
+    // =================================================================
+    // BLOQUE 1: CUADRICULA DE 6 LUCES (3 X 2)
+    // =================================================================
+    float luzPosX[3] = { -10.0f, 0.0f, 10.0f };
+    float luzPosZ[2] = { 10.0f, 0.0f };
+
+    // =================================================================
+    // BLOQUE 2: 9 LUCES EXTRA (posiciones individuales X, Y, Z)
+    // =================================================================
+    std::vector<glm::vec3> lucesExtra = {
+        glm::vec3(18.0f, 4.5f,   0.0f),   // 1
+        glm::vec3(18.0f, 4.5f,   5.0f),   // 2
+        glm::vec3(-19.0f, 5.4f,   1.0f),   // 3
+        glm::vec3(-19.0f, 5.2f,  10.0f),   // 4
+        glm::vec3(-19.0f, 5.5f, -10.0f),   // 5
+        glm::vec3(-10.0f, 5.5f, -10.0f),   // 6
+        glm::vec3(0.0f, 5.5f, -10.0f),   // 7
+        glm::vec3(10.0f, 5.5f, -10.0f),   // 8
+        glm::vec3(17.0f, 5.5f, -10.0f),   // 9
+    };
+
+    // Total: 6 (cuadricula) + 9 (extras) = 15 spotlights
+    const int NUM_SPOTLIGHTS = 6 + (int)lucesExtra.size();
+
+    // Verificacion en consola al arrancar
+    std::cout << "[INFO] Total de spotlights = " << NUM_SPOTLIGHTS
+        << " (6 cuadricula + " << lucesExtra.size() << " extras)" << std::endl;
+    std::cout << "[INFO] Asegurate de tener MAX_SPOTLIGHTS >= " << NUM_SPOTLIGHTS
+        << " en lamp.frag y modelLoading.frag" << std::endl;
 
     // =================================================================
     // RENDER LOOP
@@ -213,34 +240,49 @@ int main()
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 proj = glm::perspective(camera.GetZoom(), (GLfloat)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
 
-        // --- FUNCION AUXILIAR PARA ENVIAR DATOS DEL REFLECTOR A LOS SHADERS ---
+        // --- Construimos arreglo COMPLETO de posiciones de los 15 spotlights ---
+        std::vector<glm::vec3> spotPositions;
+        spotPositions.reserve(NUM_SPOTLIGHTS);
+
+        // Primero las 6 de la cuadricula
+        for (int row = 0; row < 2; row++) {
+            for (int col = 0; col < 3; col++) {
+                spotPositions.push_back(glm::vec3(luzPosX[col], luzTechoPos.y, luzPosZ[row]));
+            }
+        }
+        // Despues las 9 extras (cada una con su Y propia)
+        for (const auto& p : lucesExtra) {
+            spotPositions.push_back(p);
+        }
+
+        // --- FUNCION AUXILIAR PARA ENVIAR LOS 15 REFLECTORES A LOS SHADERS ---
         auto setSpotlightUniforms = [&](GLuint programID) {
             glUniform1i(glGetUniformLocation(programID, "spotLightOn"), spotLightOn);
-            glUniform3f(glGetUniformLocation(programID, "spotLightPos"), luzTechoPos.x, luzTechoPos.y, luzTechoPos.z);
-            glUniform3f(glGetUniformLocation(programID, "spotLightDir"), 0.0f, -1.0f, 0.0f); // Apunta hacia abajo (-Y)
+            glUniform1i(glGetUniformLocation(programID, "numSpotLights"), NUM_SPOTLIGHTS);
 
-            // 1. CONO MÁS GRANDE: Aumentamos los grados de apertura (antes 15 y 25)
-            glUniform1f(glGetUniformLocation(programID, "spotCutOff"), glm::cos(glm::radians(30.0f))); // Círculo interno de luz pura
-            glUniform1f(glGetUniformLocation(programID, "spotOuterCutOff"), glm::cos(glm::radians(45.0f))); // Borde donde se difumina la luz
+            glUniform3fv(
+                glGetUniformLocation(programID, "spotLightPos"),
+                NUM_SPOTLIGHTS,
+                glm::value_ptr(spotPositions[0])
+            );
 
-            // 2. LUZ MÁS SUAVE: Reducimos los valores RGB casi a la mitad (antes 1.0, 1.0, 0.85)
-            glUniform3f(glGetUniformLocation(programID, "spotLightColor"), 0.5f, 0.5f, 0.42f); // Luz cálida más tenue
+            glUniform3f(glGetUniformLocation(programID, "spotLightDir"), 0.0f, -1.0f, 0.0f);
+            glUniform1f(glGetUniformLocation(programID, "spotCutOff"), glm::cos(glm::radians(30.0f)));
+            glUniform1f(glGetUniformLocation(programID, "spotOuterCutOff"), glm::cos(glm::radians(45.0f)));
+            glUniform3f(glGetUniformLocation(programID, "spotLightColor"), 0.5f, 0.5f, 0.42f);
             };
 
         // -------------------------------------------------------------
-        // DIBUJO 1: GEOMETRIA DE LA FACULTAD (Piso, Paredes, Columnas)
+        // DIBUJO 1: GEOMETRIA DE LA FACULTAD
         // -------------------------------------------------------------
         shader.Use();
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(proj));
 
-        // Enviamos la información del reflector al shader de geometría (lamp.frag)
         setSpotlightUniforms(shader.Program);
 
         glm::mat4 I(1);
         auto setModel = [&](const glm::mat4& m) { glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(m)); };
-
-        // Multiplica el color de la geometría por el tinte del día/noche actual
         auto setColorTinted = [&](float r, float g, float b) {
             glm::vec3 c = P.tint * glm::vec3(r, g, b);
             glUniform3f(colorLoc, c.r, c.g, c.b);
@@ -274,11 +316,9 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "projection"), 1, GL_FALSE, glm::value_ptr(proj));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 
-        // Enviamos la intensidad general del día/noche (tintColor)
         GLint modelTintLoc = glGetUniformLocation(shader1.Program, "tintColor");
         glUniform3f(modelTintLoc, P.tint.r, P.tint.g, P.tint.b);
 
-        // Enviamos la información del reflector al shader de los modelos (modelLoading.frag)
         setSpotlightUniforms(shader1.Program);
 
         // Sotano
@@ -294,48 +334,55 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         reja.Draw(shader1);
 
-        ////Escaleras genericas
-        //model = glm::mat4(1);
-        //model = glm::translate(model, glm::vec3(-15.0f, 0.0f, 5.0f));
-        //model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        //model = glm::scale(model, glm::vec3(2.0f, 2.0f, 2.0f));
-        //glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        //upstairs.Draw(shader1);
-
         //Estatua escalera
         model = glm::mat4(1);
         model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 2.488f));
-        //model = glm::scale(model, glm::vec3(0.11f, 0.097f, 0.12f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         base1.Draw(shader1);
 
         model = glm::mat4(1);
         model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 2.5f));
-        //model = glm::scale(model, glm::vec3(0.11f, 0.097f, 0.12f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         estatua1.Draw(shader1);
 
         //Estatua examenes
         model = glm::mat4(1);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, -0.5f));
-        //model = glm::scale(model, glm::vec3(0.11f, 0.097f, 0.12f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         base2.Draw(shader1);
 
         model = glm::mat4(1);
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, -0.5f));
-        //model = glm::scale(model, glm::vec3(0.11f, 0.097f, 0.12f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         estatua2.Draw(shader1);
 
-        // Luz de techo (Dibuja el modelo de la lámpara en la posición designada)
-        model = glm::mat4(1);
-        model = glm::translate(model, luzTechoPos);
-        model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::rotate(model, glm::radians(luzTechoRotY), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::scale(model, luzTechoScale);
-        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        luzTecho.Draw(shader1);
+        // ============(   LUCES DE TECHO - CUADRICULA 2 X 3 = 6   )=================
+        for (int row = 0; row < 2; row++) {
+            for (int col = 0; col < 3; col++) {
+                model = glm::mat4(1);
+                model = glm::translate(model, glm::vec3(luzPosX[col], luzTechoPos.y, luzPosZ[row]));
+                model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+                model = glm::rotate(model, glm::radians(luzTechoRotY), glm::vec3(0.0f, 1.0f, 0.0f));
+                model = glm::scale(model, luzTechoScale);
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                luzTecho.Draw(shader1);
+            }
+        }
+        // ============(   FIN CUADRICULA   )========================================
+
+        // ============(   LUCES EXTRA (9 luces individuales)   )====================
+        // Cada luz se dibuja en su (X, Y, Z) propia y emite reflector tambien.
+        // ==========================================================================
+        for (const auto& pos : lucesExtra) {
+            model = glm::mat4(1);
+            model = glm::translate(model, pos);
+            model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+            model = glm::rotate(model, glm::radians(luzTechoRotY), glm::vec3(0.0f, 1.0f, 0.0f));
+            model = glm::scale(model, luzTechoScale);
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            luzTecho.Draw(shader1);
+        }
+        // ============(   FIN LUCES EXTRA   )=======================================
 
         glBindVertexArray(0);
         glfwSwapBuffers(window);
@@ -375,15 +422,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
         firstMouse = true;
     }
 
-    // --- NUEVO CONTROL: Tecla F para apagar/encender el Reflector ---
-    if (key == GLFW_KEY_F && action == GLFW_PRESS) {
-        spotLightOn = !spotLightOn;
-    }
+    if (key == GLFW_KEY_F && action == GLFW_PRESS) spotLightOn = !spotLightOn;
 
-    // Controles para cambiar el ciclo de dia
-    if (key == GLFW_KEY_1 && action == GLFW_PRESS) currentPreset = 0; // Mañana
-    if (key == GLFW_KEY_2 && action == GLFW_PRESS) currentPreset = 1; // Tarde
-    if (key == GLFW_KEY_3 && action == GLFW_PRESS) currentPreset = 2; // Noche
+    if (key == GLFW_KEY_1 && action == GLFW_PRESS) currentPreset = 0;
+    if (key == GLFW_KEY_2 && action == GLFW_PRESS) currentPreset = 1;
+    if (key == GLFW_KEY_3 && action == GLFW_PRESS) currentPreset = 2;
 
     if (key >= 0 && key < 1024) {
         if (action == GLFW_PRESS)        keys[key] = true;

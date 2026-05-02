@@ -1,34 +1,47 @@
 #version 330 core
+
+// =====================================================================
+//  lamp.frag (geometria procedural: piso, edificios, columnas)
+//  Soporta hasta 16 spotlights simultaneos.
+// =====================================================================
+
+#define MAX_SPOTLIGHTS 16
+
+in vec3 FragPos;
+
 out vec4 FragColor;
 
-in vec3 FragPos; 
-uniform vec3 color; 
+uniform vec3 color;
 
-// --- VARIABLES DEL REFLECTOR ---
-uniform bool spotLightOn;
-uniform vec3 spotLightPos;
-uniform vec3 spotLightDir;
+uniform bool  spotLightOn;
+uniform int   numSpotLights;
+uniform vec3  spotLightPos[MAX_SPOTLIGHTS];
+uniform vec3  spotLightDir;
 uniform float spotCutOff;
 uniform float spotOuterCutOff;
-uniform vec3 spotLightColor;
+uniform vec3  spotLightColor;
 
 void main()
 {
-    vec3 finalColor = color; 
+    vec3 baseColor = color;
+    vec3 result = baseColor;
 
-    if(spotLightOn)
+    if (spotLightOn)
     {
-        vec3 lightDir = normalize(spotLightPos - FragPos);
-        float theta = dot(lightDir, normalize(-spotLightDir));
-        float epsilon = spotCutOff - spotOuterCutOff;
-        float intensity = clamp((theta - spotOuterCutOff) / epsilon, 0.0, 1.0);
+        for (int i = 0; i < numSpotLights; i++)
+        {
+            vec3 toLight = normalize(spotLightPos[i] - FragPos);
+            float theta = dot(toLight, normalize(-spotLightDir));
 
-        float distance = length(spotLightPos - FragPos);
-        float attenuation = 1.0 / (1.0 + 0.045 * distance + 0.0075 * (distance * distance));
+            float epsilon   = spotCutOff - spotOuterCutOff;
+            float intensity = clamp((theta - spotOuterCutOff) / epsilon, 0.0, 1.0);
 
-        vec3 spotContribution = spotLightColor * intensity * attenuation * 2.0;
-        finalColor += spotContribution;
+            float dist = length(spotLightPos[i] - FragPos);
+            float attenuation = 1.0 / (1.0 + 0.09 * dist + 0.032 * dist * dist);
+
+            result += baseColor * spotLightColor * intensity * attenuation;
+        }
     }
 
-    FragColor = vec4(finalColor, 1.0f);
+    FragColor = vec4(result, 1.0);
 }
