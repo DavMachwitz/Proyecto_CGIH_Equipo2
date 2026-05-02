@@ -138,6 +138,10 @@ int main()
     Model base1((char*)"Models/BaseEstatuaEscalera.obj");
     Model estatua2((char*)"Models/EstatuaExamenes.obj");
     Model base2((char*)"Models/BaseEstatuaExamenes.obj");
+    //Stands
+    Model silla((char*)"Models/Stands/Chair/13494_Folding_Chairs_v1_L3.obj");
+    Model mesa((char*)"Models/Stands/Table/table.obj");
+    Model standOc((char*)"Models/Stands/Octanorm/Octanorm.obj");
 
     glm::mat4 projection = glm::perspective(camera.GetZoom(), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
 
@@ -355,6 +359,28 @@ int main()
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, -0.5f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         estatua2.Draw(shader1);
+        //Stands
+        //Silla
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(10.0f, 0.5f, 0.0f));
+        model = glm::rotate(model, 4.7123f, glm::vec3(1.0f, 0.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        silla.Draw(shader1);
+
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(10.0f, 1.0f, 1.0f));
+        //model = glm::rotate(model, 4.7123f, glm::vec3(1.0f, 0.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(2.5f, 1.5f, 2.0f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        mesa.Draw(shader1);
+
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(10.0f, 0.4f, 5.0f));
+        model = glm::rotate(model, 3.1416f, glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(1.5f, 1.5f, 1.5f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        standOc.Draw(shader1);
 
         // ============(   LUCES DE TECHO - CUADRICULA 2 X 3 = 6   )=================
         for (int row = 0; row < 2; row++) {
