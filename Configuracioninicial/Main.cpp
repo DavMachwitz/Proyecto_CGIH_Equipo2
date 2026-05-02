@@ -218,12 +218,6 @@ int main()
     // Total: 6 (cuadricula) + 9 (extras) = 15 spotlights
     const int NUM_SPOTLIGHTS = 6 + (int)lucesExtra.size();
 
-    // Verificacion en consola al arrancar
-    std::cout << "[INFO] Total de spotlights = " << NUM_SPOTLIGHTS
-        << " (6 cuadricula + " << lucesExtra.size() << " extras)" << std::endl;
-    std::cout << "[INFO] Asegurate de tener MAX_SPOTLIGHTS >= " << NUM_SPOTLIGHTS
-        << " en lamp.frag y modelLoading.frag" << std::endl;
-
     // =================================================================
     // RENDER LOOP
     // =================================================================
