@@ -2,12 +2,7 @@
 //  PROYECTO: Planta Base - Facultad
 //  Implementación: Sistema Día/Noche + Reflectores Múltiples (Tecla F)
 //
-//  TOTAL DE LUCES: 15 spotlights
-//    - 6 luces en cuadricula (3 X 2)
-//    - 9 luces extra individuales
 //
-//  IMPORTANTE: lamp.frag y modelLoading.frag DEBEN tener
-//    #define MAX_SPOTLIGHTS 16  (o mayor)
 // =====================================================================
 
 #include <iostream>
@@ -68,6 +63,7 @@ int currentPreset = 1;
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void MouseCallback(GLFWwindow* window, double xPos, double yPos);
 void DoMovement();
+void Animation();
 
 inline float mX(float xm) { return (xm - 21.25f) * 0.10f; }
 inline float mZ(float zm) { return -(zm - 13.50f) * 0.10f; }
@@ -99,6 +95,79 @@ GLuint makeVAO_raw(const GLfloat* v, GLsizeiptr vs) {
     glEnableVertexAttribArray(0);
     glBindVertexArray(0);
     return vao;
+}
+// =====================================================================
+// Estructuras para animación por Key Frames
+// =====================================================================
+
+// Silla
+float sillaAsientoRot = 66.0f;
+float sillaPatasRot = -60.0f;
+float sillaPosX = 6.1088;
+float sillaPosY = 0.0f;
+float sillaPosZ = 7.6101f;
+
+// Mesa
+float mesaAnilloY = -2.0f;
+float mesaPataRot = -90.0f;
+
+// Stand Octanorm
+float standBaseY = -5.0f;
+float standTechoY = 10.0f;
+float panel1Y = 10.0f, panel2Y = 10.0f, panel3Y = 10.0f, panel4Y = 10.0f;
+
+#define MAX_FRAMES 9
+int i_max_steps = 600;
+int i_curr_steps = 0;
+typedef struct _frame {
+    // Silla 
+    float sillaPosX, sillaPosY, sillaPosZ;
+    float sillaAsientoRot, sillaPatasRot;
+
+    // Mesa
+    float mesaAnilloY;
+    float mesaPataRot, mesaSoporteRot, mesaDiagonalRot;
+
+    // Stand Octanorm 
+    float standBaseY, standTechoY;
+    float panel1Y, panel2Y, panel3Y, panel4Y;
+
+    // Incrementos para la interpolación
+    float sillaAsientoInc, sillaPatasInc;
+    float sillaPosXInc, sillaPosYInc, sillaPosZInc;
+    float mesaAnilloInc, mesaPataInc, mesaSoporteInc, mesaDiagonalInc;
+    float standBaseInc, standTechoInc;
+    float p1Inc, p2Inc, p3Inc, p4Inc;
+} FRAME;
+
+FRAME KeyFrame[MAX_FRAMES];
+int FrameIndex = 0;			//introducir datos
+bool play = false;
+int playIndex = 0;
+
+
+void interpolation(void)
+{
+    KeyFrame[playIndex].sillaPosXInc = (KeyFrame[playIndex + 1].sillaPosX - KeyFrame[playIndex].sillaPosX) / i_max_steps;
+    KeyFrame[playIndex].sillaPosYInc = (KeyFrame[playIndex + 1].sillaPosY - KeyFrame[playIndex].sillaPosY) / i_max_steps;
+    KeyFrame[playIndex].sillaPosZInc = (KeyFrame[playIndex + 1].sillaPosZ - KeyFrame[playIndex].sillaPosZ) / i_max_steps;
+    KeyFrame[playIndex].sillaAsientoInc = (KeyFrame[playIndex + 1].sillaAsientoRot - KeyFrame[playIndex].sillaAsientoRot) / i_max_steps;
+    KeyFrame[playIndex].sillaPatasInc = (KeyFrame[playIndex + 1].sillaPatasRot - KeyFrame[playIndex].sillaPatasRot) / i_max_steps;
+
+    // Mesa
+    KeyFrame[playIndex].mesaAnilloInc = (KeyFrame[playIndex + 1].mesaAnilloY - KeyFrame[playIndex].mesaAnilloY) / i_max_steps;
+    KeyFrame[playIndex].mesaPataInc = (KeyFrame[playIndex + 1].mesaPataRot - KeyFrame[playIndex].mesaPataRot) / i_max_steps;
+    KeyFrame[playIndex].mesaSoporteInc = (KeyFrame[playIndex + 1].mesaSoporteRot - KeyFrame[playIndex].mesaSoporteRot) / i_max_steps;
+    KeyFrame[playIndex].mesaDiagonalInc = (KeyFrame[playIndex + 1].mesaDiagonalRot - KeyFrame[playIndex].mesaDiagonalRot) / i_max_steps;
+
+    // Stand
+    KeyFrame[playIndex].standBaseInc = (KeyFrame[playIndex + 1].standBaseY - KeyFrame[playIndex].standBaseY) / i_max_steps;
+    KeyFrame[playIndex].standTechoInc = (KeyFrame[playIndex + 1].standTechoY - KeyFrame[playIndex].standTechoY) / i_max_steps;
+    KeyFrame[playIndex].p1Inc = (KeyFrame[playIndex + 1].panel1Y - KeyFrame[playIndex].panel1Y) / i_max_steps;
+    KeyFrame[playIndex].p2Inc = (KeyFrame[playIndex + 1].panel2Y - KeyFrame[playIndex].panel2Y) / i_max_steps;
+    KeyFrame[playIndex].p3Inc = (KeyFrame[playIndex + 1].panel3Y - KeyFrame[playIndex].panel3Y) / i_max_steps;
+    KeyFrame[playIndex].p4Inc = (KeyFrame[playIndex + 1].panel4Y - KeyFrame[playIndex].panel4Y) / i_max_steps;
+
 }
 
 // =====================================================================
@@ -138,10 +207,46 @@ int main()
     Model base1((char*)"Models/BaseEstatuaEscalera.obj");
     Model estatua2((char*)"Models/EstatuaExamenes.obj");
     Model base2((char*)"Models/BaseEstatuaExamenes.obj");
-    //Stands
-    Model silla((char*)"Models/Stands/Chair/13494_Folding_Chairs_v1_L3.obj");
-    Model mesa((char*)"Models/Stands/Table/table.obj");
-    Model standOc((char*)"Models/Stands/Octanorm/Octanorm.obj");
+    //Silla
+    Model sillaMarco((char*)"Models/Stands/Chair/Silla_Marco.obj");
+    Model sillaAsiento((char*)"Models/Stands/Chair/Silla_Asiento.obj");
+    Model sillaPatas((char*)"Models/Stands/Chair/Silla_patas.obj");
+    //Mesa
+    Model tablon((char*)"Models/Stands/Table/tablon.obj");
+    Model ap1((char*)"Models/Stands/Table/anillo_pata1.obj");
+    Model ap2((char*)"Models/Stands/Table/anillo_pata2.obj");
+    Model dp1((char*)"Models/Stands/Table/diagonales_pata1.obj");
+    Model dp2((char*)"Models/Stands/Table/diagonales_pata2.obj");
+    Model p1((char*)"Models/Stands/Table/pata1.obj");
+    Model p2((char*)"Models/Stands/Table/pata2.obj");
+    Model tp1((char*)"Models/Stands/Table/tubo_pata1.obj");
+    Model tp2((char*)"Models/Stands/Table/tubo_pata2.obj");
+    //StandOctanorm
+    Model base((char*)"Models/Stands/Octanorm/base_stand.obj");
+    Model trave((char*)"Models/Stands/Octanorm/trave_stand.obj");
+    Model panel1((char*)"Models/Stands/Octanorm/panel1.obj");
+    Model panel2((char*)"Models/Stands/Octanorm/panel2.obj");
+    Model panel3((char*)"Models/Stands/Octanorm/panel3.obj");
+    Model panel4((char*)"Models/Stands/Octanorm/panel4.obj");
+
+    //KeyFrames
+    // FRAME 0: ESTADO INICIAL (Silla plegada en la pared)
+    KeyFrame[0].sillaPosX = 5.968f;
+    KeyFrame[0].sillaPosY = 0.0f;
+    KeyFrame[0].sillaPosZ = 7.0114f;
+    KeyFrame[0].sillaAsientoRot = 66.0f;
+    KeyFrame[0].sillaPatasRot = -60.0f;
+
+    // FRAME 1: ESTADO FINAL (Silla abierta en su lugar)
+    KeyFrame[1].sillaPosX = 0.0f;
+    KeyFrame[1].sillaPosY = 0.0f;
+    KeyFrame[1].sillaPosZ = 0.0f;
+    KeyFrame[1].sillaAsientoRot = 0.0f;
+    KeyFrame[1].sillaPatasRot = 0.0f;
+
+    FrameIndex = 2;
+
+
 
     glm::mat4 projection = glm::perspective(camera.GetZoom(), (float)SCREEN_WIDTH / (float)SCREEN_HEIGHT, 0.1f, 100.0f);
 
@@ -229,6 +334,7 @@ int main()
 
         glfwPollEvents();
         DoMovement();
+        Animation();
 
         const TimeOfDayPreset& P = presets[currentPreset];
 
@@ -321,7 +427,6 @@ int main()
 
         // Sotano
         glm::mat4 model(1);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         sotano.Draw(shader1);
 
@@ -356,25 +461,87 @@ int main()
         //Stands
         //Silla
         model = glm::mat4(1);
-        model = glm::translate(model, glm::vec3(10.0f, 0.5f, 0.0f));
-        model = glm::rotate(model, 4.7123f, glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(0.06f, 0.06f, 0.06f));
+        model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        silla.Draw(shader1);
+        sillaMarco.Draw(shader1);
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
+        model = glm::translate(model, glm::vec3(9.9f, 1.2448f, -1.80f));
+        model = glm::rotate(model, glm::radians(sillaAsientoRot), glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::translate(model, glm::vec3(-9.9f, -1.2448f, 1.80f));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        sillaAsiento.Draw(shader1);
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
+        model = glm::translate(model, glm::vec3(9.76, 0.96, -1.25));
+        model = glm::rotate(model, glm::radians(sillaPatasRot), glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::translate(model, glm::vec3(-9.76, -0.96, 1.25));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        sillaPatas.Draw(shader1);
+
+        //Mesa
+        model = glm::mat4(1);
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        tablon.Draw(shader1);
 
         model = glm::mat4(1);
-        model = glm::translate(model, glm::vec3(10.0f, 1.0f, 1.0f));
-        //model = glm::rotate(model, 4.7123f, glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(2.5f, 1.5f, 2.0f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        mesa.Draw(shader1);
+        ap1.Draw(shader1);
 
         model = glm::mat4(1);
-        model = glm::translate(model, glm::vec3(10.0f, 0.4f, 5.0f));
-        model = glm::rotate(model, 3.1416f, glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(1.5f, 1.5f, 1.5f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        standOc.Draw(shader1);
+        ap2.Draw(shader1);
+
+        model = glm::mat4(1);
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        dp1.Draw(shader1);
+
+        model = glm::mat4(1);
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        dp2.Draw(shader1);
+
+        model = glm::mat4(1);
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        p1.Draw(shader1);
+
+        model = glm::mat4(1);
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        p2.Draw(shader1);
+
+        model = glm::mat4(1);
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        tp1.Draw(shader1);
+
+        model = glm::mat4(1);
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        tp2.Draw(shader1);
+        //stand
+        model = glm::mat4(1);
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        base.Draw(shader1);
+
+        model = glm::mat4(1);
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        trave.Draw(shader1);
+
+        model = glm::mat4(1);
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        panel1.Draw(shader1);
+
+        model = glm::mat4(1);
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        panel2.Draw(shader1);
+
+        model = glm::mat4(1);
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        panel3.Draw(shader1);
+
+        model = glm::mat4(1);
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        panel4.Draw(shader1);
+
 
         // ============(   LUCES DE TECHO - CUADRICULA 2 X 3 = 6   )=================
         for (int row = 0; row < 2; row++) {
@@ -451,5 +618,51 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
     if (key >= 0 && key < 1024) {
         if (action == GLFW_PRESS)        keys[key] = true;
         else if (action == GLFW_RELEASE) keys[key] = false;
+    }
+    if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+        if (!play) {
+            play = true;
+            playIndex = 0;
+            i_curr_steps = 0;
+            interpolation();
+        }
+    }
+}
+
+void Animation() {
+    if (play) {
+        if (i_curr_steps >= i_max_steps) {
+            playIndex++;
+            if (playIndex >= FrameIndex - 1) {
+                play = false; // Detener al final de los frames
+            }
+            else {
+                i_curr_steps = 0;
+                interpolation();
+            }
+        }
+        else {
+            // Silla
+            sillaPosX += KeyFrame[playIndex].sillaPosXInc;
+            sillaPosY += KeyFrame[playIndex].sillaPosYInc;
+            sillaPosZ += KeyFrame[playIndex].sillaPosZInc;
+            sillaAsientoRot += KeyFrame[playIndex].sillaAsientoInc;
+            sillaPatasRot += KeyFrame[playIndex].sillaPatasInc;
+
+            // Mesa
+            mesaAnilloY += KeyFrame[playIndex].mesaAnilloInc;
+            mesaPataRot += KeyFrame[playIndex].mesaPataInc;
+
+
+            // Stand
+            standBaseY += KeyFrame[playIndex].standBaseInc;
+            standTechoY += KeyFrame[playIndex].standTechoInc;
+            panel1Y += KeyFrame[playIndex].p1Inc;
+            panel2Y += KeyFrame[playIndex].p2Inc;
+            panel3Y += KeyFrame[playIndex].p3Inc;
+            panel4Y += KeyFrame[playIndex].p4Inc;
+
+            i_curr_steps++;
+        }
     }
 }
