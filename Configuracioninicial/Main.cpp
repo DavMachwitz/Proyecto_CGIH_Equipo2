@@ -108,18 +108,18 @@ float sillaPosY = 0.0f;
 float sillaPosZ = 7.6101f;
 
 // Mesa
-float mesaPosX = 6.0003f;     // Cerca de la pared
+float mesaPosX = 6.0003f;
 float mesaPosY = -1.0f;
 float mesaPosZ = 8.10612f;
-float mesaTablonRotZ = -270.0f; // Mesa de lado
-float mesaPata1Rot = -90.0f;   // Patas dobladas hacia el tablón
-float mesaPata2Rot = 90.0f;   // Patas dobladas hacia el tablón
+float mesaTablonRotZ = -270.0f;
+float mesaPata1Rot = -90.0f;
+float mesaPata2Rot = 90.0f;
 float tuboPata1Rot = 45.0f;
 
 // Stand Octanorm
-float standBaseY = -5.0f;
-float standTechoY = 10.0f;
-float panel1Y = 10.0f, panel2Y = 10.0f, panel3Y = 10.0f, panel4Y = 10.0f;
+float standHoriz = 1.4481f;
+float standBase = -3.7086f;
+float panel = -6.0f;
 
 #define MAX_FRAMES 9
 int i_max_steps = 600;
@@ -130,7 +130,7 @@ typedef struct _frame {
     float sillaAsientoRot, sillaPatasRot;
 
     // Mesa
-    float mesaPosX;     // Cerca de la pared
+    float mesaPosX;   
     float mesaPosY;
     float mesaPosZ;
     float mesaPata1Rot;
@@ -138,22 +138,25 @@ typedef struct _frame {
     float tuboPata1Rot;
 
     // Stand Octanorm 
-    float standBaseY, standTechoY;
-    float panel1Y, panel2Y, panel3Y, panel4Y;
+    float standHoriz, standBase;
+    float panel;
 
     // Incrementos para la interpolación
     float sillaAsientoInc, sillaPatasInc;
     float sillaPosXInc, sillaPosYInc, sillaPosZInc;
     float mesaPosXInc, mesaPosYInc, mesaPosZInc;
     float mesaPata1RotInc, mesaPata2RotInc, tuboPata1RotInc;
-    float standBaseInc, standTechoInc;
-    float p1Inc, p2Inc, p3Inc, p4Inc;
+    float standHorizInc, standBaseInc;
+    float panelInc;
 } FRAME;
 
 FRAME KeyFrame[MAX_FRAMES];
-int FrameIndex = 0;			//introducir datos
+int FrameIndex = 0;		
 bool play = false;
 int playIndex = 0;
+int direccion = 1; 
+bool mostrarStands = true;
+
 
 
 void interpolation(void)
@@ -173,13 +176,11 @@ void interpolation(void)
     KeyFrame[playIndex].tuboPata1RotInc = (KeyFrame[playIndex + 1].tuboPata1Rot - KeyFrame[playIndex].tuboPata1Rot) / i_max_steps;
 
     // Stand
-    KeyFrame[playIndex].standBaseInc = (KeyFrame[playIndex + 1].standBaseY - KeyFrame[playIndex].standBaseY) / i_max_steps;
-    KeyFrame[playIndex].standTechoInc = (KeyFrame[playIndex + 1].standTechoY - KeyFrame[playIndex].standTechoY) / i_max_steps;
-    KeyFrame[playIndex].p1Inc = (KeyFrame[playIndex + 1].panel1Y - KeyFrame[playIndex].panel1Y) / i_max_steps;
-    KeyFrame[playIndex].p2Inc = (KeyFrame[playIndex + 1].panel2Y - KeyFrame[playIndex].panel2Y) / i_max_steps;
-    KeyFrame[playIndex].p3Inc = (KeyFrame[playIndex + 1].panel3Y - KeyFrame[playIndex].panel3Y) / i_max_steps;
-    KeyFrame[playIndex].p4Inc = (KeyFrame[playIndex + 1].panel4Y - KeyFrame[playIndex].panel4Y) / i_max_steps;
+    KeyFrame[playIndex].standHorizInc = (KeyFrame[playIndex + 1].standHoriz - KeyFrame[playIndex].standHoriz) / i_max_steps;
 
+    KeyFrame[playIndex].standBaseInc = (KeyFrame[playIndex + 1].standBase - KeyFrame[playIndex].standBase) / i_max_steps;
+    KeyFrame[playIndex].panelInc = (KeyFrame[playIndex + 1].panel - KeyFrame[playIndex].panel) / i_max_steps;
+   
 }
 
 // =====================================================================
@@ -225,14 +226,8 @@ int main()
     Model sillaPatas((char*)"Models/Stands/Chair/Silla_patas.obj");
     //Mesa
     Model tablon((char*)"Models/Stands/Table/tablon.obj");
-    Model ap1((char*)"Models/Stands/Table/anillo_pata1.obj");
-    Model ap2((char*)"Models/Stands/Table/anillo_pata2.obj");
-    Model dp1((char*)"Models/Stands/Table/diagonales_pata1.obj");
-    Model dp2((char*)"Models/Stands/Table/diagonales_pata2.obj");
     Model p1((char*)"Models/Stands/Table/pata1.obj");
     Model p2((char*)"Models/Stands/Table/pata2.obj");
-    Model tp1((char*)"Models/Stands/Table/tubo_pata1.obj");
-    Model tp2((char*)"Models/Stands/Table/tubo_pata2.obj");
     //StandOctanorm
     Model base((char*)"Models/Stands/Octanorm/base_stand.obj");
     Model trave((char*)"Models/Stands/Octanorm/trave_stand.obj");
@@ -242,7 +237,7 @@ int main()
     Model panel4((char*)"Models/Stands/Octanorm/panel4.obj");
 
     //KeyFrames
-    // FRAME 0: ESTADO INICIAL (Silla plegada en la pared)
+    // FRAME 0: ESTADO INICIAL
     KeyFrame[0].sillaPosX = 5.968f;
     KeyFrame[0].sillaPosY = 0.0f;
     KeyFrame[0].sillaPosZ = 7.0114f;
@@ -255,9 +250,12 @@ int main()
     KeyFrame[0].mesaPata1Rot = -90.0f;
     KeyFrame[0].mesaPata2Rot = 90.0f;
     KeyFrame[0].tuboPata1Rot = 45.0f;
+
+    KeyFrame[0].standHoriz = 1.4481f;
+    KeyFrame[0].standBase = -3.7086f;
+    KeyFrame[0].panel = -6.0f;
     
-    
-    // FRAME 1: ESTADO FINAL (Silla abierta en su lugar)
+    // FRAME 1: ESTADO FINAL
     KeyFrame[1].sillaPosX = 0.0f;
     KeyFrame[1].sillaPosY = 0.0f;
     KeyFrame[1].sillaPosZ = 0.0f;
@@ -270,6 +268,12 @@ int main()
     KeyFrame[1].mesaPata1Rot = 0.0f;
     KeyFrame[1].mesaPata2Rot = 0.0f;
     KeyFrame[1].tuboPata1Rot = 0.0f;
+
+    KeyFrame[1].standHoriz = 0.0f;
+    KeyFrame[1].standBase = 0.0f;
+    KeyFrame[1].panel = -0.0f;
+
+
     FrameIndex = 2;
 
 
@@ -486,75 +490,84 @@ int main()
         estatua2.Draw(shader1);
         //Stands
         //Silla
-        model = glm::mat4(1);
-        model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
-        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        sillaMarco.Draw(shader1);
+        if (mostrarStands) {
+            model = glm::mat4(1);
+            model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            sillaMarco.Draw(shader1);
 
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
-        model = glm::translate(model, glm::vec3(9.9f, 1.2448f, -1.80f));
-        model = glm::rotate(model, glm::radians(sillaAsientoRot), glm::vec3(0.0f, 0.0f, 1.0f));
-        model = glm::translate(model, glm::vec3(-9.9f, -1.2448f, 1.80f));
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        sillaAsiento.Draw(shader1);
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
+            model = glm::translate(model, glm::vec3(9.9f, 1.2448f, -1.80f));
+            model = glm::rotate(model, glm::radians(sillaAsientoRot), glm::vec3(0.0f, 0.0f, 1.0f));
+            model = glm::translate(model, glm::vec3(-9.9f, -1.2448f, 1.80f));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            sillaAsiento.Draw(shader1);
 
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
-        model = glm::translate(model, glm::vec3(9.76, 0.96, -1.25));
-        model = glm::rotate(model, glm::radians(sillaPatasRot), glm::vec3(0.0f, 0.0f, 1.0f));
-        model = glm::translate(model, glm::vec3(-9.76, -0.96, 1.25));
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        sillaPatas.Draw(shader1);
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
+            model = glm::translate(model, glm::vec3(9.76, 0.96, -1.25));
+            model = glm::rotate(model, glm::radians(sillaPatasRot), glm::vec3(0.0f, 0.0f, 1.0f));
+            model = glm::translate(model, glm::vec3(-9.76, -0.96, 1.25));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            sillaPatas.Draw(shader1);
 
-        //Mesa
-        model = glm::mat4(1);
-        model = glm::translate(model, glm::vec3(mesaPosX, mesaPosY, mesaPosZ));
-        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        tablon.Draw(shader1);
+            //Mesa
+            model = glm::mat4(1);
+            model = glm::translate(model, glm::vec3(mesaPosX, mesaPosY, mesaPosZ));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            tablon.Draw(shader1);
 
-        model = glm::mat4(1);
-        model = glm::translate(model, glm::vec3(mesaPosX, mesaPosY, mesaPosZ));
-        model = glm::translate(model, glm::vec3(8.30, 1.5, -1.73));
-        model = glm::rotate(model, glm::radians(mesaPata1Rot), glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::translate(model, glm::vec3(-8.30, -1.5, 1.73));
-        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        p1.Draw(shader1);
+            model = glm::mat4(1);
+            model = glm::translate(model, glm::vec3(mesaPosX, mesaPosY, mesaPosZ));
+            model = glm::translate(model, glm::vec3(8.30, 1.5, -1.73));
+            model = glm::rotate(model, glm::radians(mesaPata1Rot), glm::vec3(1.0f, 0.0f, 0.0f));
+            model = glm::translate(model, glm::vec3(-8.30, -1.5, 1.73));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            p1.Draw(shader1);
 
-        model = glm::mat4(1);
-        model = glm::translate(model, glm::vec3(mesaPosX, mesaPosY, mesaPosZ));
-        model = glm::translate(model, glm::vec3(8.49, 1.45, 0.102));
-        model = glm::rotate(model, glm::radians(mesaPata2Rot), glm::vec3(1.0f, 0.0f, 0.0f));
-        model = glm::translate(model, glm::vec3(-8.49, -1.45, -0.102));
-        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        p2.Draw(shader1);
+            model = glm::mat4(1);
+            model = glm::translate(model, glm::vec3(mesaPosX, mesaPosY, mesaPosZ));
+            model = glm::translate(model, glm::vec3(8.49, 1.45, 0.102));
+            model = glm::rotate(model, glm::radians(mesaPata2Rot), glm::vec3(1.0f, 0.0f, 0.0f));
+            model = glm::translate(model, glm::vec3(-8.49, -1.45, -0.102));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            p2.Draw(shader1);
 
-        
-        //stand
-        model = glm::mat4(1);
-        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        base.Draw(shader1);
 
-        model = glm::mat4(1);
-        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        trave.Draw(shader1);
+            //stand
+            model = glm::mat4(1);
+            model = glm::translate(model, glm::vec3(0.0, standBase, 0.0));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            base.Draw(shader1);
 
-        model = glm::mat4(1);
-        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        panel1.Draw(shader1);
+            model = glm::mat4(1);
+            model = glm::translate(model, glm::vec3(0.0, standHoriz, 0.0));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            trave.Draw(shader1);
 
-        model = glm::mat4(1);
-        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        panel2.Draw(shader1);
+            model = glm::mat4(1);
+            model = glm::translate(model, glm::vec3(0.0, panel, 0.0));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            panel1.Draw(shader1);
 
-        model = glm::mat4(1);
-        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        panel3.Draw(shader1);
+            model = glm::mat4(1);
+            model = glm::translate(model, glm::vec3(0.0, panel, 0.0));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            panel2.Draw(shader1);
 
-        model = glm::mat4(1);
-        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        panel4.Draw(shader1);
+            model = glm::mat4(1);
+            model = glm::translate(model, glm::vec3(0.0, panel, 0.0));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            panel3.Draw(shader1);
 
+            model = glm::mat4(1);
+            model = glm::translate(model, glm::vec3(0.0, panel, 0.0));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            panel4.Draw(shader1);
+        }else{
+            //stands mas complejos, solo traslaciones desde el suelo o el techo
+        }
 
         // ============(   LUCES DE TECHO - CUADRICULA 2 X 3 = 6   )=================
         for (int row = 0; row < 2; row++) {
@@ -632,52 +645,51 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
         if (action == GLFW_PRESS)        keys[key] = true;
         else if (action == GLFW_RELEASE) keys[key] = false;
     }
-    if (key == GLFW_KEY_P && action == GLFW_PRESS) {
-        if (!play) {
-            play = true;
-            playIndex = 0;
-            i_curr_steps = 0;
-            interpolation();
+    if (key == GLFW_KEY_P && action == GLFW_PRESS && !play) {
+        play = true;
+        i_curr_steps = 0; 
+        if (sillaAsientoRot >= 60.0f) { 
+            direccion = 1;
+            playIndex = 0; 
         }
+        else {
+            direccion = -1;
+            playIndex = 0; 
+        }
+
+        interpolation();
+    }
+    if (key == GLFW_KEY_L && action == GLFW_PRESS) {
+        mostrarStands = !mostrarStands;
     }
 }
 
 void Animation() {
     if (play) {
         if (i_curr_steps >= i_max_steps) {
-            playIndex++;
-            if (playIndex >= FrameIndex - 1) {
-                play = false; // Detener al final de los frames
-            }
-            else {
-                i_curr_steps = 0;
-                interpolation();
-            }
+            play = false;
+            i_curr_steps = 0;
         }
         else {
             // Silla
-            sillaPosX += KeyFrame[playIndex].sillaPosXInc;
-            sillaPosY += KeyFrame[playIndex].sillaPosYInc;
-            sillaPosZ += KeyFrame[playIndex].sillaPosZInc;
-            sillaAsientoRot += KeyFrame[playIndex].sillaAsientoInc;
-            sillaPatasRot += KeyFrame[playIndex].sillaPatasInc;
+            sillaPosX += KeyFrame[playIndex].sillaPosXInc * direccion;
+            sillaPosY += KeyFrame[playIndex].sillaPosYInc * direccion;
+            sillaPosZ += KeyFrame[playIndex].sillaPosZInc * direccion;
+            sillaAsientoRot += KeyFrame[playIndex].sillaAsientoInc * direccion;
+            sillaPatasRot += KeyFrame[playIndex].sillaPatasInc * direccion;
 
             // Mesa
-           mesaPosX += KeyFrame[playIndex].mesaPosXInc;
-           mesaPosY+= KeyFrame[playIndex].mesaPosYInc;
-           mesaPosZ += KeyFrame[playIndex].mesaPosZInc;
-           mesaPata1Rot += KeyFrame[playIndex].mesaPata1RotInc;
-           mesaPata2Rot += KeyFrame[playIndex].mesaPata2RotInc;
-           tuboPata1Rot += KeyFrame[playIndex].tuboPata1RotInc;
+            mesaPosX += KeyFrame[playIndex].mesaPosXInc * direccion;
+            mesaPosY += KeyFrame[playIndex].mesaPosYInc * direccion;
+            mesaPosZ += KeyFrame[playIndex].mesaPosZInc * direccion;
+            mesaPata1Rot += KeyFrame[playIndex].mesaPata1RotInc * direccion;
+            mesaPata2Rot += KeyFrame[playIndex].mesaPata2RotInc * direccion;
+            tuboPata1Rot += KeyFrame[playIndex].tuboPata1RotInc * direccion;
 
-
-            // Stand
-            standBaseY += KeyFrame[playIndex].standBaseInc;
-            standTechoY += KeyFrame[playIndex].standTechoInc;
-            panel1Y += KeyFrame[playIndex].p1Inc;
-            panel2Y += KeyFrame[playIndex].p2Inc;
-            panel3Y += KeyFrame[playIndex].p3Inc;
-            panel4Y += KeyFrame[playIndex].p4Inc;
+            // Stand Octanorm
+            standHoriz += KeyFrame[playIndex].standHorizInc * direccion;
+            standBase += KeyFrame[playIndex].standBaseInc * direccion;
+            panel += KeyFrame[playIndex].panelInc * direccion;
 
             i_curr_steps++;
         }
