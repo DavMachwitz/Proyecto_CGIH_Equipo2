@@ -11,6 +11,16 @@ d 1.000000
 illum 2
 map_Kd Textures/old_concrete-stairs-01_texture.png
 
+newmtl Mat_Barandal
+Ns 90.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Textures/Barandal_Text.jpg
+
 newmtl Mat_Esc_Wall
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
@@ -131,6 +141,66 @@ Ni 1.500000
 d 1.000000
 illum 2
 
+newmtl Material.002
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Textures/Aud_Text.png
+
+newmtl Material.003
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Textures/Pumagua.png
+
+newmtl Material.004
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Textures/Text_Piza.png
+
+newmtl Material.005
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Textures/texture_bike.png
+
+newmtl Material.008
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Textures/Textura_Reciclaje.png
+
+newmtl Text_Placa
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Textures/Text_Placa.png
+
 newmtl Text_Psio_Audit
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
@@ -140,6 +210,16 @@ Ni 1.500000
 d 1.000000
 illum 2
 map_Kd Textures/Text_P_Estat.png
+
+newmtl Text_ingLopHaro
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Textures/Text_IngLopHaro.png
 
 newmtl Textura_Columnas
 Ns 250.000000

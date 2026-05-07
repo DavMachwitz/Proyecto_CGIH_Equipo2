@@ -22,7 +22,7 @@
 #include "Model.h"
 
 // ---- Ventana --------------------------------------------------------
-const GLuint WIDTH = 1000, HEIGHT = 1000;
+const GLuint WIDTH = 1300, HEIGHT = 800;
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 
 // ---- Tiempo ---------------------------------------------------------
