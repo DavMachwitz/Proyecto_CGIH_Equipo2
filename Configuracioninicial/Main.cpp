@@ -111,7 +111,7 @@ float sillaPosZ = 7.6101f;
 float mesaPosX = 6.0003f;
 float mesaPosY = -1.0f;
 float mesaPosZ = 8.10612f;
-float mesaTablonRotZ = -270.0f;
+float mesaTablonRotX = 0.0f;
 float mesaPata1Rot = -90.0f;
 float mesaPata2Rot = 90.0f;
 float tuboPata1Rot = 45.0f;
@@ -136,6 +136,7 @@ typedef struct _frame {
     float mesaPata1Rot;
     float mesaPata2Rot;
     float tuboPata1Rot;
+    float mesaTablonRotX;
 
     // Stand Octanorm 
     float standHoriz, standBase;
@@ -145,7 +146,7 @@ typedef struct _frame {
     float sillaAsientoInc, sillaPatasInc;
     float sillaPosXInc, sillaPosYInc, sillaPosZInc;
     float mesaPosXInc, mesaPosYInc, mesaPosZInc;
-    float mesaPata1RotInc, mesaPata2RotInc, tuboPata1RotInc;
+    float mesaPata1RotInc, mesaPata2RotInc, tuboPata1RotInc, mesaTablonRotXInc;
     float standHorizInc, standBaseInc;
     float panelInc;
 } FRAME;
@@ -172,6 +173,7 @@ void interpolation(void)
     KeyFrame[playIndex].mesaPosYInc = (KeyFrame[playIndex + 1].mesaPosY - KeyFrame[playIndex].mesaPosY) / i_max_steps;
     KeyFrame[playIndex].mesaPosZInc = (KeyFrame[playIndex + 1].mesaPosZ - KeyFrame[playIndex].mesaPosZ) / i_max_steps;
     KeyFrame[playIndex].mesaPata1RotInc = (KeyFrame[playIndex + 1].mesaPata1Rot - KeyFrame[playIndex].mesaPata1Rot) / i_max_steps;
+    KeyFrame[playIndex].mesaTablonRotXInc = (KeyFrame[playIndex + 1].mesaTablonRotX - KeyFrame[playIndex].mesaTablonRotX) / i_max_steps;
     KeyFrame[playIndex].mesaPata2RotInc = (KeyFrame[playIndex + 1].mesaPata2Rot - KeyFrame[playIndex].mesaPata2Rot) / i_max_steps;
     KeyFrame[playIndex].tuboPata1RotInc = (KeyFrame[playIndex + 1].tuboPata1Rot - KeyFrame[playIndex].tuboPata1Rot) / i_max_steps;
 
@@ -249,32 +251,70 @@ int main()
     KeyFrame[0].mesaPosZ = 8.10612f;
     KeyFrame[0].mesaPata1Rot = -90.0f;
     KeyFrame[0].mesaPata2Rot = 90.0f;
+    KeyFrame[0].mesaTablonRotX = 0.0f;
     KeyFrame[0].tuboPata1Rot = 45.0f;
 
     KeyFrame[0].standHoriz = 1.4481f;
     KeyFrame[0].standBase = -3.7086f;
     KeyFrame[0].panel = -6.0f;
-    
-    // FRAME 1: ESTADO FINAL
-    KeyFrame[1].sillaPosX = 0.0f;
+    //Frame 2
+    KeyFrame[1].sillaPosX = 5.968f;
     KeyFrame[1].sillaPosY = 0.0f;
-    KeyFrame[1].sillaPosZ = 0.0f;
+    KeyFrame[1].sillaPosZ = 7.0114f;
     KeyFrame[1].sillaAsientoRot = 0.0f;
     KeyFrame[1].sillaPatasRot = 0.0f;
 
-    KeyFrame[1].mesaPosX = 0.0;
+    KeyFrame[1].mesaPosX = 6.0003f;
     KeyFrame[1].mesaPosY = 0.0f;
-    KeyFrame[1].mesaPosZ = 0.0f;
+    KeyFrame[1].mesaPosZ = 8.10612f;
     KeyFrame[1].mesaPata1Rot = 0.0f;
-    KeyFrame[1].mesaPata2Rot = 0.0f;
-    KeyFrame[1].tuboPata1Rot = 0.0f;
+    KeyFrame[1].mesaPata2Rot = 90.0f;
+    KeyFrame[1].tuboPata1Rot = 45.0f;
+    KeyFrame[1].mesaTablonRotX = 25.0f;
 
-    KeyFrame[1].standHoriz = 0.0f;
-    KeyFrame[1].standBase = 0.0f;
-    KeyFrame[1].panel = -0.0f;
+    KeyFrame[1].standHoriz = 1.4481f;
+    KeyFrame[1].standBase = -3.7086f;
+    KeyFrame[1].panel = -6.0f;
+
+    //Frame 3
+    KeyFrame[2].sillaPosX = 5.968f;
+    KeyFrame[2].sillaPosY = 0.0f;
+    KeyFrame[2].sillaPosZ = 7.0114f;
+    KeyFrame[2].sillaAsientoRot = 0.0f;
+    KeyFrame[2].sillaPatasRot = 0.0f;
+
+    KeyFrame[2].mesaPosX = 6.0003f;
+    KeyFrame[2].mesaPosY = 0.0f;
+    KeyFrame[2].mesaPosZ = 8.10612f;
+    KeyFrame[2].mesaPata1Rot = 0.0f;
+    KeyFrame[2].mesaPata2Rot = 0.0f;
+    KeyFrame[2].tuboPata1Rot = 0.0f;
+    KeyFrame[2].mesaTablonRotX = 0.0f;
+
+    KeyFrame[2].standHoriz = 1.4481f;
+    KeyFrame[2].standBase = -3.7086f;
+    KeyFrame[2].panel = -6.0f;
+    
+    // FRAME 1: ESTADO FINAL
+    KeyFrame[3].sillaPosX = 0.0f;
+    KeyFrame[3].sillaPosY = 0.0f;
+    KeyFrame[3].sillaPosZ = 0.0f;
+    KeyFrame[3].sillaAsientoRot = 0.0f;
+    KeyFrame[3].sillaPatasRot = 0.0f;
+
+    KeyFrame[3].mesaPosX = 0.0;
+    KeyFrame[3].mesaPosY = 0.0f;
+    KeyFrame[3].mesaPosZ = 0.0f;
+    KeyFrame[3].mesaPata1Rot = 0.0f;
+    KeyFrame[3].mesaPata2Rot = 0.0f;
+    KeyFrame[3].tuboPata1Rot = 0.0f;
+
+    KeyFrame[3].standHoriz = 0.0f;
+    KeyFrame[3].standBase = 0.0f;
+    KeyFrame[3].panel = -0.0f;
 
 
-    FrameIndex = 2;
+    FrameIndex = 4;
 
 
 
@@ -513,25 +553,39 @@ int main()
             sillaPatas.Draw(shader1);
 
             //Mesa
-            model = glm::mat4(1);
-            model = glm::translate(model, glm::vec3(mesaPosX, mesaPosY, mesaPosZ));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            glm::mat4 modelMesa = glm::mat4(1.0f);
+
+            // 1. Traslación global (Posición de la mesa en el sótano)
+            modelMesa = glm::translate(modelMesa, glm::vec3(mesaPosX, mesaPosY, mesaPosZ));
+
+            // 2. ROTACIÓN DEL TABLÓN (Inclinación sobre X)
+            // Usamos un sándwich para que rote sobre su borde (ajusta el 1.5 y -1.73 según tu modelo)
+            modelMesa = glm::translate(modelMesa, glm::vec3(8.30f, 1.5f, -1.73f));
+            modelMesa = glm::rotate(modelMesa, glm::radians(mesaTablonRotX), glm::vec3(1.0f, 0.0f, 0.0f));
+            modelMesa = glm::translate(modelMesa, glm::vec3(-8.30f, -1.5f, 1.73f));
+
+            // Dibujamos el tablón
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelMesa));
             tablon.Draw(shader1);
 
-            model = glm::mat4(1);
-            model = glm::translate(model, glm::vec3(mesaPosX, mesaPosY, mesaPosZ));
-            model = glm::translate(model, glm::vec3(8.30, 1.5, -1.73));
-            model = glm::rotate(model, glm::radians(mesaPata1Rot), glm::vec3(1.0f, 0.0f, 0.0f));
-            model = glm::translate(model, glm::vec3(-8.30, -1.5, 1.73));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            // --- PATA 1 (Hija del Tablón) ---
+            // Empezamos con la matriz del tablón para que herede su inclinación
+            glm::mat4 modelPata1 = modelMesa;
+            // Ahora aplicamos su propia rotación interna para que se abra
+            modelPata1 = glm::translate(modelPata1, glm::vec3(8.30f, 1.5f, -1.73f));
+            modelPata1 = glm::rotate(modelPata1, glm::radians(mesaPata1Rot), glm::vec3(1.0f, 0.0f, 0.0f));
+            modelPata1 = glm::translate(modelPata1, glm::vec3(-8.30f, -1.5f, 1.73f));
+
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPata1));
             p1.Draw(shader1);
 
-            model = glm::mat4(1);
-            model = glm::translate(model, glm::vec3(mesaPosX, mesaPosY, mesaPosZ));
-            model = glm::translate(model, glm::vec3(8.49, 1.45, 0.102));
-            model = glm::rotate(model, glm::radians(mesaPata2Rot), glm::vec3(1.0f, 0.0f, 0.0f));
-            model = glm::translate(model, glm::vec3(-8.49, -1.45, -0.102));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            // --- PATA 2 (Hija del Tablón) ---
+            glm::mat4 modelPata2 = modelMesa; // También hereda la inclinación del tablón
+            modelPata2 = glm::translate(modelPata2, glm::vec3(8.49f, 1.45f, 0.102f));
+            modelPata2 = glm::rotate(modelPata2, glm::radians(mesaPata2Rot), glm::vec3(1.0f, 0.0f, 0.0f));
+            modelPata2 = glm::translate(modelPata2, glm::vec3(-8.49f, -1.45f, -0.102f));
+
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPata2));
             p2.Draw(shader1);
 
 
@@ -647,14 +701,17 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
     }
     if (key == GLFW_KEY_P && action == GLFW_PRESS && !play) {
         play = true;
-        i_curr_steps = 0; 
-        if (sillaAsientoRot >= 60.0f) { 
+        i_curr_steps = 0;
+
+        // Si estamos en el inicio (Doblada), armamos hacia adelante
+        if (sillaAsientoRot >= 60.0f) {
             direccion = 1;
-            playIndex = 0; 
+            playIndex = 0; // Empezamos en el primer intervalo (0->1)
         }
+        // Si estamos en el final (Abierta), desarmamos hacia atrás
         else {
             direccion = -1;
-            playIndex = 0; 
+            playIndex = FrameIndex - 2; // Empezamos desde el último intervalo (2->1)
         }
 
         interpolation();
@@ -664,11 +721,63 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
     }
 }
 
+//void Animation() {
+//    if (play) {
+//        if (i_curr_steps >= i_max_steps) {
+//            play = false;
+//            i_curr_steps = 0;
+//        }
+//        else {
+//            // Silla
+//            sillaPosX += KeyFrame[playIndex].sillaPosXInc * direccion;
+//            sillaPosY += KeyFrame[playIndex].sillaPosYInc * direccion;
+//            sillaPosZ += KeyFrame[playIndex].sillaPosZInc * direccion;
+//            sillaAsientoRot += KeyFrame[playIndex].sillaAsientoInc * direccion;
+//            sillaPatasRot += KeyFrame[playIndex].sillaPatasInc * direccion;
+//
+//            // Mesa
+//            mesaPosX += KeyFrame[playIndex].mesaPosXInc * direccion;
+//            mesaPosY += KeyFrame[playIndex].mesaPosYInc * direccion;
+//            mesaPosZ += KeyFrame[playIndex].mesaPosZInc * direccion;
+//            mesaPata1Rot += KeyFrame[playIndex].mesaPata1RotInc * direccion;
+//            mesaPata2Rot += KeyFrame[playIndex].mesaPata2RotInc * direccion;
+//            tuboPata1Rot += KeyFrame[playIndex].tuboPata1RotInc * direccion;
+//
+//            // Stand Octanorm
+//            standHoriz += KeyFrame[playIndex].standHorizInc * direccion;
+//            standBase += KeyFrame[playIndex].standBaseInc * direccion;
+//            panel += KeyFrame[playIndex].panelInc * direccion;
+//
+//            i_curr_steps++;
+//        }
+//    }
+//}
 void Animation() {
     if (play) {
-        if (i_curr_steps >= i_max_steps) {
-            play = false;
-            i_curr_steps = 0;
+        if (i_curr_steps >= i_max_steps) { // ¿Terminó el intervalo actual?
+
+            // Si vamos hacia adelante (armar)
+            if (direccion == 1) {
+                if (playIndex < FrameIndex - 2) { // ¿Hay más cuadros adelante?
+                    playIndex++;
+                    i_curr_steps = 0;
+                    interpolation();
+                }
+                else {
+                    play = false; // Llegamos al final (Frame 2)
+                }
+            }
+            // Si vamos hacia atrás (desarmar)
+            else {
+                if (playIndex > 0) { // ¿Hay más cuadros atrás?
+                    playIndex--;
+                    i_curr_steps = 0;
+                    interpolation();
+                }
+                else {
+                    play = false; // Llegamos al inicio (Frame 0)
+                }
+            }
         }
         else {
             // Silla
@@ -684,6 +793,7 @@ void Animation() {
             mesaPosZ += KeyFrame[playIndex].mesaPosZInc * direccion;
             mesaPata1Rot += KeyFrame[playIndex].mesaPata1RotInc * direccion;
             mesaPata2Rot += KeyFrame[playIndex].mesaPata2RotInc * direccion;
+            mesaTablonRotX += KeyFrame[playIndex].mesaTablonRotXInc * direccion;
             tuboPata1Rot += KeyFrame[playIndex].tuboPata1RotInc * direccion;
 
             // Stand Octanorm
