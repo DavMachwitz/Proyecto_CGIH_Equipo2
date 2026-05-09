@@ -16,7 +16,7 @@
 
 
 #include "Shader.h"
-
+#define MAX_BONE_INFLUENCE 4
 using namespace std;
 
 struct Vertex
@@ -27,6 +27,8 @@ struct Vertex
 	glm::vec3 Normal;
 	// TexCoords
 	glm::vec2 TexCoords;
+	int m_BoneIDs[MAX_BONE_INFLUENCE];    // IDs de los huesos que afectan al vértice
+    float m_Weights[MAX_BONE_INFLUENCE];  // Intensidad de la influencia de cada hueso
 };
 
 struct Texture
@@ -137,6 +139,12 @@ private:
 		// Vertex Texture Coords
 		glEnableVertexAttribArray(2);
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid *)offsetof(Vertex, TexCoords));
+		// Bone IDs - Usamos glVertexAttribIPointer (con 'I') porque son enteros
+		glEnableVertexAttribArray(5);
+		glVertexAttribIPointer(5, 4, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, m_BoneIDs));
+		// Bone Weights
+		glEnableVertexAttribArray(6);
+		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, m_Weights));
 
 		glBindVertexArray(0);
 	}

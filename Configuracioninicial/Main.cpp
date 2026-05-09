@@ -20,6 +20,13 @@
 #include "Shader.h"
 #include "Camera.h"
 #include "Model.h"
+#include "ModelAnimation.h"
+#include "Animator.h"
+
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 
 // ---- Ventana --------------------------------------------------------
 const GLuint WIDTH = 1300, HEIGHT = 800;
@@ -121,6 +128,16 @@ float standHoriz = 1.4481f;
 float standBase = -3.7086f;
 float panel = -6.0f;
 
+//Persona 
+glm::vec3 personaPos = glm::vec3(0.0f, 0.2f, -65.0f);
+glm::vec3 personaPos2 = glm::vec3(2.0f, 0.2f, 65.0f);
+float     personaSpeed = 1.0f;   // unidades por segundo
+float     personaDirZ = 1.0f;   // camina en dirección Z
+float     personaRotY = 0.0f;   // rotación para que mire hacia donde camina
+
+float     persona2DirZ = -1.0f; // ← dirección contraria
+float     persona2RotY = 180.0f;
+
 #define MAX_FRAMES 9
 int i_max_steps = 600;
 int i_curr_steps = 0;
@@ -210,9 +227,12 @@ int main()
     if (GLEW_OK != glewInit()) return EXIT_FAILURE;
     glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);                                    // ← agregar
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     Shader shader("Shader/core.vs", "Shader/lamp.frag");
     Shader shader1("Shader/modelLoading.vs", "Shader/modelLoading.frag");
+    Shader shader2("Shader/lamp.vs", "Shader/modelLoading.frag");
 
     Model sotano((char*)"Models/SotanoFI.obj");
     Model reja((char*)"Models/reja.obj");
@@ -237,6 +257,15 @@ int main()
     Model panel2((char*)"Models/Stands/Octanorm/panel2.obj");
     Model panel3((char*)"Models/Stands/Octanorm/panel3.obj");
     Model panel4((char*)"Models/Stands/Octanorm/panel4.obj");
+    //People
+    Model persona1((char*)"Models/People/person1.dae");
+	Model persona2((char*)"Models/People/person2.dae");
+
+    // NUEVO: crear animación y animator para persona1
+    ModelAnimation danceAnim("Models/People/person1.dae", persona1.GetBoneInfoMap(),persona1.GetBoneCount());
+    Animator animator(&danceAnim);
+	ModelAnimation danceAnim2("Models/People/person2.dae", persona2.GetBoneInfoMap(), persona2.GetBoneCount());
+	Animator animator2(&danceAnim2);
 
     //KeyFrames
     // FRAME 0: ESTADO INICIAL
@@ -487,6 +516,7 @@ int main()
         // DIBUJO 2: MODELOS EXTERNOS .OBJ
         // -------------------------------------------------------------
         shader1.Use();
+        glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "projection"), 1, GL_FALSE, glm::value_ptr(proj));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 
@@ -528,7 +558,64 @@ int main()
         model = glm::translate(model, glm::vec3(0.0f, 0.0f, -0.5f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         estatua2.Draw(shader1);
-        //Stands
+
+        //Personas
+		//shader2.Use();
+        // ── Mover la posición del personaje ──────────────────────────
+        personaPos.z += personaSpeed * personaDirZ * deltaTime;
+        personaPos2.z += personaSpeed * persona2DirZ * deltaTime;
+        
+        if (personaPos.z > 13.0f) {
+            personaDirZ = -1.0f;
+            personaRotY = 180.0f;  // girar cuando cambia de dirección
+        }
+        if (personaPos.z < -13.0f) {
+            personaDirZ = 1.0f;
+            personaRotY = 0.0f;
+        }
+
+        if (personaPos2.z < -13.0f) {
+            persona2DirZ = 1.0f;
+            persona2RotY = 0.0f;
+        }
+        if (personaPos2.z > 13.0f) {
+            persona2DirZ = -1.0f;
+            persona2RotY = 180.0f;
+        }
+        // ── Skinning y matrices ───────────────────────────────────────
+        glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_TRUE);
+        animator.UpdateAnimation(deltaTime);
+        const auto& boneMatrices = animator.GetFinalBoneMatrices();
+        for (int i = 0; i < 100; i++) {
+            string uName = "finalBonesMatrices[" + to_string(i) + "]";
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, uName.c_str()),
+                1, GL_FALSE, &boneMatrices[i][0][0]);
+        }
+
+        // ── Dibujar en la posición actualizada ───────────────────────
+        glm::mat4 modelPersona = glm::mat4(1.0f);
+        modelPersona = glm::translate(modelPersona, personaPos);
+        modelPersona = glm::rotate(modelPersona,glm::radians(personaRotY),glm::vec3(0.0f, 1.0f, 0.0f));
+        modelPersona = glm::scale(modelPersona, glm::vec3(0.5f, 0.5f, 0.5f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"),1, GL_FALSE, glm::value_ptr(modelPersona));
+        persona1.Draw(shader1);
+
+        animator2.UpdateAnimation(deltaTime);
+        const auto& bones2 = animator2.GetFinalBoneMatrices();
+        for (int i = 0; i < 100; i++) {
+            string uName = "finalBonesMatrices[" + to_string(i) + "]";
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, uName.c_str()),
+                1, GL_FALSE, &bones2[i][0][0]);
+        }
+        glm::mat4 modelPersona2 = glm::mat4(1.0f);
+        modelPersona2 = glm::translate(modelPersona2, personaPos2);
+        //modelPersona2 = glm::rotate(modelPersona2, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        modelPersona2 = glm::rotate(modelPersona2, glm::radians(persona2RotY), glm::vec3(0.0f, 1.0f, 0.0f));
+        modelPersona2 = glm::scale(modelPersona2, glm::vec3(1.0f, 1.0f, 1.0f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPersona2));
+        persona2.Draw(shader1);
+
+        glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);       
         //Silla
         if (mostrarStands) {
             model = glm::mat4(1);

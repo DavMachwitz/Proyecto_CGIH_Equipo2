@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <string>
 #include <fstream>
@@ -14,9 +14,12 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assert.h>
 
 #include "Mesh.h"
-#include  "Shader.h"
+#include "Shader.h"
+#include "AssimpGLMHelper.h"  
+#include "ModelAnimation.h"
 
 using namespace std;
 
@@ -25,6 +28,8 @@ GLint TextureFromFile(const char *path, string directory);
 class Model
 {
 public:
+	 map<string, BoneInfo>& GetBoneInfoMap()  { return m_BoneInfoMap; }
+    int&                   GetBoneCount()    { return m_BoneCounter; }
 	/*  Functions   */
 	// Constructor, expects a filepath to a 3D model.
 	Model(GLchar *path)
@@ -49,12 +54,21 @@ private:
 
 										/*  Functions   */
 										// Loads a model with supported ASSIMP extensions from file and stores the resulting meshes in the meshes vector.
+	map<string, BoneInfo> m_BoneInfoMap;
+    int                   m_BoneCounter = 0;
 	void loadModel(string path)
 	{
 		// Read file via ASSIMP
 		Assimp::Importer importer;
-		const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-
+		//const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+		// En Model.h -> loadModel
+		//const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_LimitBoneWeights);
+		//const aiScene* scene = importer.ReadFile(path,
+		//	aiProcess_Triangulate |
+		//	aiProcess_FlipUVs |
+		//	aiProcess_GlobalScale);   // ← agregar
+		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_LimitBoneWeights
+		| aiProcess_FlipUVs| aiProcess_GlobalScale);
 		// Check for errors
 		if (!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
 		{
@@ -87,6 +101,57 @@ private:
 			this->processNode(node->mChildren[i], scene);
 		}
 	}
+	// Dentro de processMesh, antes de vertices.push_back(vertex):
+	void SetVertexBoneDataToDefault(Vertex& vertex) {
+		for (int i = 0; i < MAX_BONE_INFLUENCE; i++) {
+			vertex.m_BoneIDs[i] = -1;
+			vertex.m_Weights[i] = 0.0f;
+		}
+	}
+	void SetVertexBoneData(Vertex& vertex, int boneID, float weight)
+    {
+        for (int i = 0; i < MAX_BONE_INFLUENCE; i++) {
+            if (vertex.m_BoneIDs[i] < 0) {
+                vertex.m_Weights[i] = weight;
+                vertex.m_BoneIDs[i] = boneID;
+                break;
+            }
+        }
+    }
+	void ExtractBoneWeightForVertices(vector<Vertex>& vertices, aiMesh* mesh, const aiScene* scene) {
+		for (unsigned int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex) {
+			int boneID = -1;
+	        string boneName = mesh->mBones[boneIndex]->mName.C_Str();		        
+		     if (m_BoneInfoMap.find(boneName) == m_BoneInfoMap.end())
+            {
+                BoneInfo newBoneInfo;
+                newBoneInfo.id     = m_BoneCounter;
+                newBoneInfo.offset = ConvertMatrixToGLMFormat(
+                    mesh->mBones[boneIndex]->mOffsetMatrix);
+                m_BoneInfoMap[boneName] = newBoneInfo;
+                boneID = m_BoneCounter;
+                m_BoneCounter++;
+            }
+            else
+            {
+                boneID = m_BoneInfoMap[boneName].id;
+            }
+ 
+            assert(boneID != -1);
+ 
+            auto weights    = mesh->mBones[boneIndex]->mWeights;
+            int  numWeights = mesh->mBones[boneIndex]->mNumWeights;
+ 
+            for (int weightIndex = 0; weightIndex < numWeights; weightIndex++)
+            {
+                int   vertexId = weights[weightIndex].mVertexId;
+                float weight   = weights[weightIndex].mWeight;
+                assert(vertexId < (int)vertices.size());
+                SetVertexBoneData(vertices[vertexId], boneID, weight);
+            }
+        }
+    }
+
 
 	Mesh processMesh(aiMesh *mesh, const aiScene *scene)
 	{
@@ -100,6 +165,7 @@ private:
 		{
 			Vertex vertex;
 			glm::vec3 vector; // We declare a placeholder vector since assimp uses its own vector class that doesn't directly convert to glm's vec3 class so we transfer the data to this placeholder glm::vec3 first.
+			SetVertexBoneDataToDefault(vertex);
 
 							  // Positions
 			vector.x = mesh->mVertices[i].x;
@@ -127,9 +193,9 @@ private:
 			{
 				vertex.TexCoords = glm::vec2(0.0f, 0.0f);
 			}
-
 			vertices.push_back(vertex);
 		}
+		ExtractBoneWeightForVertices(vertices, mesh, scene);
 
 		// Now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
 		for (GLuint i = 0; i < mesh->mNumFaces; i++)
@@ -217,11 +283,11 @@ GLint TextureFromFile(const char *path, string directory)
 
 	int width, height;
 
-	unsigned char *image = SOIL_load_image(filename.c_str(), &width, &height, 0, SOIL_LOAD_RGB);
+	unsigned char *image = SOIL_load_image(filename.c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
 
 	// Assign texture to ID
 	glBindTexture(GL_TEXTURE_2D, textureID);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	// Parameters
