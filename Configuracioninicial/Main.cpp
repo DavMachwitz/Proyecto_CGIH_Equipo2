@@ -76,9 +76,9 @@ bool    spotLightOn = false;
 // =====================================================================
 // 2.b) MODO FIESTA (luces de colores + musica)
 // =====================================================================
-bool  fiestaMode = false;   // toggle con tecla G
-float fiestaTimer = 0.0f;    // acumulador de tiempo entre rotaciones
-int   fiestaOffset = 0;       // desplazamiento de colores entre luces
+bool  fiestaMode    = false;   // toggle con tecla G
+float fiestaTimer   = 0.0f;    // acumulador de tiempo entre rotaciones
+int   fiestaOffset  = 0;       // desplazamiento de colores entre luces
 const float FIESTA_INTERVAL = 0.4f;  // segundos entre cada rotacion de colores
 
 // Paleta de 15 colores UNICOS (uno por cada spotlight)
@@ -496,8 +496,7 @@ int main()
                 // Cada luz toma un color distinto del arreglo, rotando con fiestaOffset.
                 // Como hay 15 luces y 15 colores, NINGUN color se repite a la vez.
                 spotColors.push_back(fiestaColors[(i + fiestaOffset) % 15]);
-            }
-            else {
+            } else {
                 spotColors.push_back(colorLuzNormal);
             }
         }
@@ -505,11 +504,11 @@ int main()
         auto setSpotlightUniforms = [&](GLuint programID) {
             glUniform1i(glGetUniformLocation(programID, "spotLightOn"), spotLightOn);
             glUniform1i(glGetUniformLocation(programID, "numSpotLights"), NUM_SPOTLIGHTS);
-            glUniform3fv(glGetUniformLocation(programID, "spotLightPos"), NUM_SPOTLIGHTS, glm::value_ptr(spotPositions[0]));
+            glUniform3fv(glGetUniformLocation(programID, "spotLightPos"),   NUM_SPOTLIGHTS, glm::value_ptr(spotPositions[0]));
             glUniform3fv(glGetUniformLocation(programID, "spotLightColor"), NUM_SPOTLIGHTS, glm::value_ptr(spotColors[0]));
-            glUniform3f(glGetUniformLocation(programID, "spotLightDir"), 0.0f, -1.0f, 0.0f);
-            glUniform1f(glGetUniformLocation(programID, "spotCutOff"), glm::cos(glm::radians(30.0f)));
-            glUniform1f(glGetUniformLocation(programID, "spotOuterCutOff"), glm::cos(glm::radians(45.0f)));
+            glUniform3f (glGetUniformLocation(programID, "spotLightDir"), 0.0f, -1.0f, 0.0f);
+            glUniform1f (glGetUniformLocation(programID, "spotCutOff"),      glm::cos(glm::radians(30.0f)));
+            glUniform1f (glGetUniformLocation(programID, "spotOuterCutOff"), glm::cos(glm::radians(45.0f)));
             };
 
         // =============================================================
@@ -808,9 +807,8 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
             // SND_FILENAME = pasamos un path  | SND_LOOP = repetir
             // SND_ASYNC    = no bloquea       | SND_NODEFAULT = no usar default si falla
             PlaySoundA("Audio/party_1.wav", NULL,
-                SND_FILENAME | SND_LOOP | SND_ASYNC | SND_NODEFAULT);
-        }
-        else {
+                       SND_FILENAME | SND_LOOP | SND_ASYNC | SND_NODEFAULT);
+        } else {
             // Detener musica
             PlaySoundA(NULL, NULL, 0);
         }
@@ -828,8 +826,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
         if (sillaAsientoRot >= 60.0f) {
             direccion = 1;
             playIndex = 0;
-        }
-        else {
+        } else {
             direccion = -1;
             playIndex = FrameIndex - 2;
         }
@@ -849,23 +846,19 @@ void Animation() {
                 playIndex++;
                 i_curr_steps = 0;
                 interpolation();
-            }
-            else {
+            } else {
                 play = false;
             }
-        }
-        else {
+        } else {
             if (playIndex > 0) {
                 playIndex--;
                 i_curr_steps = 0;
                 interpolation();
-            }
-            else {
+            } else {
                 play = false;
             }
         }
-    }
-    else {
+    } else {
         sillaPosX += KeyFrame[playIndex].sillaPosXInc * direccion;
         sillaPosY += KeyFrame[playIndex].sillaPosYInc * direccion;
         sillaPosZ += KeyFrame[playIndex].sillaPosZInc * direccion;
