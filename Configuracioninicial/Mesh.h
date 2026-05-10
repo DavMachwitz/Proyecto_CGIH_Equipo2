@@ -13,8 +13,6 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-
-
 #include "Shader.h"
 #define MAX_BONE_INFLUENCE 4
 using namespace std;
@@ -27,8 +25,8 @@ struct Vertex
 	glm::vec3 Normal;
 	// TexCoords
 	glm::vec2 TexCoords;
-	int m_BoneIDs[MAX_BONE_INFLUENCE];    // IDs de los huesos que afectan al vértice
-    float m_Weights[MAX_BONE_INFLUENCE];  // Intensidad de la influencia de cada hueso
+	int m_BoneIDs[MAX_BONE_INFLUENCE];    // IDs de los huesos que afectan al vertice
+	float m_Weights[MAX_BONE_INFLUENCE];  // Intensidad de la influencia de cada hueso
 };
 
 struct Texture
@@ -41,7 +39,7 @@ struct Texture
 class Mesh
 {
 public:
-	/*  Mesh Data  */
+	/* Mesh Data  */
 	vector<Vertex> vertices;
 	vector<GLuint> indices;
 	vector<Texture> textures;
@@ -49,12 +47,17 @@ public:
 
 	/*  Functions  */
 	// Constructor
+
+
+	/* Functions  */
+	// Constructor actualizado para recibir 4 parametros (incluyendo el nombre)
 	Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures, string name)
 	{
 		this->vertices = vertices;
 		this->indices = indices;
 		this->textures = textures;
 		this->name = name;
+
 		// Now that we have all the required data, set the vertex buffers and its attribute pointers.
 		this->setupMesh();
 	}
@@ -69,7 +72,7 @@ public:
 		for (GLuint i = 0; i < this->textures.size(); i++)
 		{
 			glActiveTexture(GL_TEXTURE0 + i); // Active proper texture unit before binding
-											  // Retrieve texture number (the N in diffuse_textureN)
+			// Retrieve texture number (the N in diffuse_textureN)
 			stringstream ss;
 			string number;
 			string name = this->textures[i].type;
@@ -107,10 +110,10 @@ public:
 	}
 
 private:
-	/*  Render data  */
+	/* Render data  */
 	GLuint VAO, VBO, EBO;
 
-	/*  Functions    */
+	/* Functions    */
 	// Initializes all the buffer objects/arrays
 	void setupMesh()
 	{
@@ -133,13 +136,13 @@ private:
 		// Set the vertex attribute pointers
 		// Vertex Positions
 		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid *)0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)0);
 		// Vertex Normals
 		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid *)offsetof(Vertex, Normal));
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, Normal));
 		// Vertex Texture Coords
 		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid *)offsetof(Vertex, TexCoords));
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, TexCoords));
 		// Bone IDs - Usamos glVertexAttribIPointer (con 'I') porque son enteros
 		glEnableVertexAttribArray(5);
 		glVertexAttribIPointer(5, 4, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, m_BoneIDs));

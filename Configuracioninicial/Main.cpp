@@ -2,9 +2,11 @@
 // =====================================================================
 //  PROYECTO: Planta Base - Facultad
 //  Implementacion: Sistema Dia/Noche + Reflectores Multiples (Tecla F)
-//                  + Animacion KeyFrames (Tecla P)
+//                  + Animacion KeyFrames (Tecla P) - 5 frames
 //                  + Personas con esqueleto animado
 //                  + MODO FIESTA (Tecla G): luces de colores + musica
+//                  + Stand Complejo (FBX con animacion por nodos)
+//                  + Doble set de stands (silla 2, mesa 2, octanorm 2)
 //
 //  CONTROLES:
 //     W/A/S/D     : moverse (horizontal, requiere fix en Camera.h)
@@ -29,6 +31,8 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "stb_image.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -38,6 +42,8 @@
 #include "Model.h"
 #include "ModelAnimation.h"
 #include "Animator.h"
+#include "NodeAnimation.h"      // <-- agregado: animacion por nodos (FBX)
+#include "NodeAnimator.h"       // <-- agregado: reproductor de animacion por nodos
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -76,14 +82,12 @@ bool    spotLightOn = false;
 // =====================================================================
 // 2.b) MODO FIESTA (luces de colores + musica)
 // =====================================================================
-bool  fiestaMode    = false;   // toggle con tecla G
-float fiestaTimer   = 0.0f;    // acumulador de tiempo entre rotaciones
-int   fiestaOffset  = 0;       // desplazamiento de colores entre luces
-const float FIESTA_INTERVAL = 0.4f;  // segundos entre cada rotacion de colores
+bool  fiestaMode = false;
+float fiestaTimer = 0.0f;
+int   fiestaOffset = 0;
+const float FIESTA_INTERVAL = 0.4f;
 
 // Paleta de 15 colores UNICOS (uno por cada spotlight)
-// Como tenemos 15 luces y 15 colores distintos, NUNCA se repiten:
-// solo "rotan" entre las luces para crear el efecto de fiesta.
 glm::vec3 fiestaColors[15] = {
     glm::vec3(1.00f, 0.00f, 0.00f),  // Rojo
     glm::vec3(0.00f, 1.00f, 0.00f),  // Verde
@@ -102,7 +106,6 @@ glm::vec3 fiestaColors[15] = {
     glm::vec3(0.70f, 0.00f, 0.90f),  // Purpura
 };
 
-// Color "normal" cuando NO hay modo fiesta (mismo que tenias antes)
 const glm::vec3 colorLuzNormal = glm::vec3(0.5f, 0.5f, 0.42f);
 
 
@@ -127,14 +130,15 @@ int currentPreset = 1;
 // =====================================================================
 // 4) ANIMACION POR KEYFRAMES (variables globales y struct)
 // =====================================================================
-// Silla
+
+// ---- Silla ----------------------------------------------------------
 float sillaAsientoRot = 66.0f;
 float sillaPatasRot = -60.0f;
 float sillaPosX = 6.1088f;
 float sillaPosY = 0.0f;
 float sillaPosZ = 7.6101f;
 
-// Mesa
+// ---- Mesa -----------------------------------------------------------
 float mesaPosX = 6.0003f;
 float mesaPosY = -1.0f;
 float mesaPosZ = 8.10612f;
@@ -143,12 +147,17 @@ float mesaPata1Rot = -90.0f;
 float mesaPata2Rot = 90.0f;
 float tuboPata1Rot = 45.0f;
 
-// Stand Octanorm
+// ---- Stand Octanorm -------------------------------------------------
 float standHoriz = 1.4481f;
 float standBase = -3.7086f;
 float panel = -6.0f;
 
-// Personas
+// ---- Stand Complejo (animacion FBX por nodos) -----------------------
+float          standAnimTime = 0.0f;
+NodeAnimation* globalStandAnimPtr = nullptr;
+float          rotY = -90.0f;
+
+// ---- Personas (movimiento manual, no por keyframes) -----------------
 glm::vec3 personaPos = glm::vec3(0.0f, 0.2f, -65.0f);
 glm::vec3 personaPos2 = glm::vec3(2.0f, 0.2f, 65.0f);
 float     personaSpeed = 1.0f;
@@ -157,7 +166,7 @@ float     personaRotY = 0.0f;
 float     persona2DirZ = -1.0f;
 float     persona2RotY = 180.0f;
 
-// KeyFrames
+// ---- KeyFrames ------------------------------------------------------
 #define MAX_FRAMES 9
 int i_max_steps = 600;
 int i_curr_steps = 0;
@@ -283,33 +292,44 @@ int main()
     Shader shader("Shader/core.vs", "Shader/lamp.frag");
     Shader shader1("Shader/modelLoading.vs", "Shader/modelLoading.frag");
     Shader shader2("Shader/lamp.vs", "Shader/modelLoading.frag");
+    Shader lightingShader("Shader/lighting.vs", "Shader/lighting.frag");  // <-- agregado
 
 
     // -----------------------------------------------------------------
     // 8) CARGA DE MODELOS
     // -----------------------------------------------------------------
+
+    // ---- Edificio base ----------------------------------------------
     Model sotano((char*)"Models/SotanoFI.obj");
     Model reja((char*)"Models/reja.obj");
     Model luzTecho((char*)"Models/luz_techo.obj");
     Model upstairs((char*)"Models/Upstairs.obj");
 
+    // ---- Fondos -----------------------------------------------------
     Model fondo((char*)"Models/Fondo_Final.obj");
     Model fondoPuente((char*)"Models/fondo_puente.obj");
     Model fondoCorredor((char*)"Models/fondo_corredor.obj");
 
+    // ---- Estatuas ---------------------------------------------------
     Model estatua1((char*)"Models/EstatuaEscalera.obj");
     Model base1((char*)"Models/BaseEstatuaEscalera.obj");
     Model estatua2((char*)"Models/EstatuaExamenes.obj");
     Model base2((char*)"Models/BaseEstatuaExamenes.obj");
 
+    // ---- Cristal (transparencia) ------------------------------------
+    Model cristal((char*)"Models/Cristal/Cristal.obj");
+
+    // ---- Stands: Silla ----------------------------------------------
     Model sillaMarco((char*)"Models/Stands/Chair/Silla_Marco.obj");
     Model sillaAsiento((char*)"Models/Stands/Chair/Silla_Asiento.obj");
     Model sillaPatas((char*)"Models/Stands/Chair/Silla_patas.obj");
 
+    // ---- Stands: Mesa -----------------------------------------------
     Model tablon((char*)"Models/Stands/Table/tablon.obj");
     Model p1((char*)"Models/Stands/Table/pata1.obj");
     Model p2((char*)"Models/Stands/Table/pata2.obj");
 
+    // ---- Stands: Octanorm -------------------------------------------
     Model base((char*)"Models/Stands/Octanorm/base_stand.obj");
     Model trave((char*)"Models/Stands/Octanorm/trave_stand.obj");
     Model panel1((char*)"Models/Stands/Octanorm/panel1.obj");
@@ -317,6 +337,13 @@ int main()
     Model panel3((char*)"Models/Stands/Octanorm/panel3.obj");
     Model panel4((char*)"Models/Stands/Octanorm/panel4.obj");
 
+    // ---- Stand Complejo (FBX con animacion por nodos) ---------------
+    Model         standComplejo((char*)"Models/Stands/Complex1/StandComplex1.fbx");
+    NodeAnimation standAnimNode("Models/Stands/Complex1/StandComplex1.fbx");
+    globalStandAnimPtr = &standAnimNode;
+    NodeAnimator  standAnimatorNode(&standAnimNode);
+
+    // ---- Personas (con esqueleto) -----------------------------------
     Model persona1((char*)"Models/People/person1.dae");
     Model persona2((char*)"Models/People/person2.dae");
 
@@ -327,8 +354,9 @@ int main()
 
 
     // -----------------------------------------------------------------
-    // 9) DEFINICION DE KEYFRAMES
+    // 9) DEFINICION DE KEYFRAMES (5 frames - estados de la animacion)
     // -----------------------------------------------------------------
+    // FRAME 0: ESTADO INICIAL (todo armado)
     KeyFrame[0].sillaPosX = 5.968f;   KeyFrame[0].sillaPosY = 0.0f;     KeyFrame[0].sillaPosZ = 7.0114f;
     KeyFrame[0].sillaAsientoRot = 66.0f; KeyFrame[0].sillaPatasRot = -60.0f;
     KeyFrame[0].mesaPosX = 6.0003f;   KeyFrame[0].mesaPosY = -1.0f;     KeyFrame[0].mesaPosZ = 8.10612f;
@@ -336,13 +364,15 @@ int main()
     KeyFrame[0].mesaTablonRotX = 0.0f; KeyFrame[0].tuboPata1Rot = 45.0f;
     KeyFrame[0].standHoriz = 1.4481f; KeyFrame[0].standBase = -3.7086f; KeyFrame[0].panel = -6.0f;
 
+    // FRAME 1: silla y mesa abriendose (mesa a la mitad)
     KeyFrame[1].sillaPosX = 5.968f;   KeyFrame[1].sillaPosY = 0.0f;     KeyFrame[1].sillaPosZ = 7.0114f;
     KeyFrame[1].sillaAsientoRot = 0.0f; KeyFrame[1].sillaPatasRot = 0.0f;
     KeyFrame[1].mesaPosX = 6.0003f;   KeyFrame[1].mesaPosY = 0.0f;      KeyFrame[1].mesaPosZ = 8.10612f;
-    KeyFrame[1].mesaPata1Rot = 0.0f;  KeyFrame[1].mesaPata2Rot = 90.0f;
+    KeyFrame[1].mesaPata1Rot = -45.0f; KeyFrame[1].mesaPata2Rot = 45.0f;
     KeyFrame[1].tuboPata1Rot = 45.0f; KeyFrame[1].mesaTablonRotX = 25.0f;
     KeyFrame[1].standHoriz = 1.4481f; KeyFrame[1].standBase = -3.7086f; KeyFrame[1].panel = -6.0f;
 
+    // FRAME 2: mesa completamente plegada
     KeyFrame[2].sillaPosX = 5.968f;   KeyFrame[2].sillaPosY = 0.0f;     KeyFrame[2].sillaPosZ = 7.0114f;
     KeyFrame[2].sillaAsientoRot = 0.0f; KeyFrame[2].sillaPatasRot = 0.0f;
     KeyFrame[2].mesaPosX = 6.0003f;   KeyFrame[2].mesaPosY = 0.0f;      KeyFrame[2].mesaPosZ = 8.10612f;
@@ -350,14 +380,23 @@ int main()
     KeyFrame[2].tuboPata1Rot = 0.0f;  KeyFrame[2].mesaTablonRotX = 0.0f;
     KeyFrame[2].standHoriz = 1.4481f; KeyFrame[2].standBase = -3.7086f; KeyFrame[2].panel = -6.0f;
 
+    // FRAME 3: silla y mesa al origen, stand SIGUE abierto
     KeyFrame[3].sillaPosX = 0.0f;     KeyFrame[3].sillaPosY = 0.0f;     KeyFrame[3].sillaPosZ = 0.0f;
     KeyFrame[3].sillaAsientoRot = 0.0f; KeyFrame[3].sillaPatasRot = 0.0f;
     KeyFrame[3].mesaPosX = 0.0f;      KeyFrame[3].mesaPosY = 0.0f;      KeyFrame[3].mesaPosZ = 0.0f;
     KeyFrame[3].mesaPata1Rot = 0.0f;  KeyFrame[3].mesaPata2Rot = 0.0f;
-    KeyFrame[3].tuboPata1Rot = 0.0f;
-    KeyFrame[3].standHoriz = 0.0f;    KeyFrame[3].standBase = 0.0f;     KeyFrame[3].panel = 0.0f;
+    KeyFrame[3].tuboPata1Rot = 0.0f;  KeyFrame[3].mesaTablonRotX = 0.0f;
+    KeyFrame[3].standHoriz = 1.4481f; KeyFrame[3].standBase = -3.7086f; KeyFrame[3].panel = -6.0f;
 
-    FrameIndex = 4;
+    // FRAME 4: ESTADO FINAL (stand cerrado, animacion FBX se completa aqui)
+    KeyFrame[4].sillaPosX = 0.0f;     KeyFrame[4].sillaPosY = 0.0f;     KeyFrame[4].sillaPosZ = 0.0f;
+    KeyFrame[4].sillaAsientoRot = 0.0f; KeyFrame[4].sillaPatasRot = 0.0f;
+    KeyFrame[4].mesaPosX = 0.0f;      KeyFrame[4].mesaPosY = 0.0f;      KeyFrame[4].mesaPosZ = 0.0f;
+    KeyFrame[4].mesaPata1Rot = 0.0f;  KeyFrame[4].mesaPata2Rot = 0.0f;
+    KeyFrame[4].tuboPata1Rot = 0.0f;  KeyFrame[4].mesaTablonRotX = 0.0f;
+    KeyFrame[4].standHoriz = 0.0f;    KeyFrame[4].standBase = 0.0f;     KeyFrame[4].panel = 0.0f;
+
+    FrameIndex = 5;
 
 
     // -----------------------------------------------------------------
@@ -467,7 +506,7 @@ int main()
             fiestaTimer += deltaTime;
             if (fiestaTimer >= FIESTA_INTERVAL) {
                 fiestaTimer = 0.0f;
-                fiestaOffset = (fiestaOffset + 1) % 15;  // siguiente rotacion
+                fiestaOffset = (fiestaOffset + 1) % 15;
             }
         }
 
@@ -493,10 +532,9 @@ int main()
         spotColors.reserve(NUM_SPOTLIGHTS);
         for (int i = 0; i < NUM_SPOTLIGHTS; i++) {
             if (fiestaMode) {
-                // Cada luz toma un color distinto del arreglo, rotando con fiestaOffset.
-                // Como hay 15 luces y 15 colores, NINGUN color se repite a la vez.
                 spotColors.push_back(fiestaColors[(i + fiestaOffset) % 15]);
-            } else {
+            }
+            else {
                 spotColors.push_back(colorLuzNormal);
             }
         }
@@ -504,11 +542,11 @@ int main()
         auto setSpotlightUniforms = [&](GLuint programID) {
             glUniform1i(glGetUniformLocation(programID, "spotLightOn"), spotLightOn);
             glUniform1i(glGetUniformLocation(programID, "numSpotLights"), NUM_SPOTLIGHTS);
-            glUniform3fv(glGetUniformLocation(programID, "spotLightPos"),   NUM_SPOTLIGHTS, glm::value_ptr(spotPositions[0]));
+            glUniform3fv(glGetUniformLocation(programID, "spotLightPos"), NUM_SPOTLIGHTS, glm::value_ptr(spotPositions[0]));
             glUniform3fv(glGetUniformLocation(programID, "spotLightColor"), NUM_SPOTLIGHTS, glm::value_ptr(spotColors[0]));
-            glUniform3f (glGetUniformLocation(programID, "spotLightDir"), 0.0f, -1.0f, 0.0f);
-            glUniform1f (glGetUniformLocation(programID, "spotCutOff"),      glm::cos(glm::radians(30.0f)));
-            glUniform1f (glGetUniformLocation(programID, "spotOuterCutOff"), glm::cos(glm::radians(45.0f)));
+            glUniform3f(glGetUniformLocation(programID, "spotLightDir"), 0.0f, -1.0f, 0.0f);
+            glUniform1f(glGetUniformLocation(programID, "spotCutOff"), glm::cos(glm::radians(30.0f)));
+            glUniform1f(glGetUniformLocation(programID, "spotOuterCutOff"), glm::cos(glm::radians(45.0f)));
             };
 
         // =============================================================
@@ -557,39 +595,46 @@ int main()
         glUniform3f(glGetUniformLocation(shader1.Program, "tintColor"), P.tint.r, P.tint.g, P.tint.b);
         setSpotlightUniforms(shader1.Program);
 
+        // ---- Sotano -------------------------------------------------
         glm::mat4 model(1);
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         sotano.Draw(shader1);
 
+        // ---- Reja ---------------------------------------------------
         model = glm::mat4(1);
         model = glm::translate(model, glm::vec3(5.0f, 0.0f, 13.85f));
         model = glm::scale(model, glm::vec3(0.11f, 0.097f, 0.12f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         reja.Draw(shader1);
 
-        // FONDOS
+        // ============(   FONDO_FINAL (escala y posicion editables)   )=============
         model = glm::mat4(1);
         model = glm::translate(model, fondoPos);
         model = glm::rotate(model, glm::radians(fondoRotY), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::scale(model, fondoScale);
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         fondo.Draw(shader1);
+        // ============(   FIN FONDO_FINAL   )=======================================
 
+        // ============(   FONDO_PUENTE (escala y posicion editables)   )============
         model = glm::mat4(1);
         model = glm::translate(model, fondoPuentePos);
         model = glm::rotate(model, glm::radians(fondoPuenteRotY), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::scale(model, fondoPuenteScale);
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         fondoPuente.Draw(shader1);
+        // ============(   FIN FONDO_PUENTE   )======================================
 
+        // ============(   FONDO_CORREDOR (escala y posicion editables)   )==========
         model = glm::mat4(1);
         model = glm::translate(model, fondoCorredorPos);
         model = glm::rotate(model, glm::radians(fondoCorredorRotY), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::scale(model, fondoCorredorScale);
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         fondoCorredor.Draw(shader1);
+        // ============(   FIN FONDO_CORREDOR   )====================================
 
-        // Estatuas
+        // ---- Estatua escalera ---------------------------------------
         model = glm::mat4(1); model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 2.488f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         base1.Draw(shader1);
@@ -598,6 +643,7 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         estatua1.Draw(shader1);
 
+        // ---- Estatua examenes ---------------------------------------
         model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, 0.0f, -0.5f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         base2.Draw(shader1);
@@ -607,7 +653,7 @@ int main()
         estatua2.Draw(shader1);
 
         // =============================================================
-        //   DIBUJO 3: PERSONAS
+        //   DIBUJO 3: PERSONAS CON ESQUELETO ANIMADO
         // =============================================================
         personaPos.z += personaSpeed * personaDirZ * deltaTime;
         personaPos2.z += personaSpeed * persona2DirZ * deltaTime;
@@ -649,8 +695,15 @@ int main()
 
         // =============================================================
         //   DIBUJO 4: STANDS (tecla L oculta)
+        //   Incluye: stand 1, stand 2 (offset z), stand complejo FBX
         // =============================================================
         if (mostrarStands) {
+
+            // ============(   STAND 1: Silla + Mesa + Octanorm   )=================
+            //  Primer set de mobiliario (posicion base).
+            // =====================================================================
+
+            // ---- Silla 1 --------------------------------------------
             model = glm::mat4(1);
             model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
@@ -672,6 +725,7 @@ int main()
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
             sillaPatas.Draw(shader1);
 
+            // ---- Mesa 1 (jerarquica: pata hereda inclinacion del tablon) ----
             glm::mat4 modelMesa = glm::mat4(1.0f);
             modelMesa = glm::translate(modelMesa, glm::vec3(mesaPosX, mesaPosY, mesaPosZ));
             modelMesa = glm::translate(modelMesa, glm::vec3(8.30f, 1.5f, -1.73f));
@@ -694,6 +748,7 @@ int main()
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPata2));
             p2.Draw(shader1);
 
+            // ---- Stand Octanorm 1 -----------------------------------
             model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, standBase, 0.0f));
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
             base.Draw(shader1);
@@ -717,6 +772,97 @@ int main()
             model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 0.0f));
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
             panel4.Draw(shader1);
+
+
+            // ============(   STAND 2: Silla + Mesa + Octanorm (offset Z)   )======
+            //  Segundo set de mobiliario, desplazado en Z.
+            // =====================================================================
+
+            // ---- Silla 2 --------------------------------------------
+            model = glm::mat4(1);
+            model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ + 4.7f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            sillaMarco.Draw(shader1);
+
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ + 4.7f));
+            model = glm::translate(model, glm::vec3(9.9f, 1.2448f, -1.80f));
+            model = glm::rotate(model, glm::radians(sillaAsientoRot), glm::vec3(0.0f, 0.0f, 1.0f));
+            model = glm::translate(model, glm::vec3(-9.9f, -1.2448f, 1.80f));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            sillaAsiento.Draw(shader1);
+
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ + 4.7f));
+            model = glm::translate(model, glm::vec3(9.76f, 0.96f, -1.25f));
+            model = glm::rotate(model, glm::radians(sillaPatasRot), glm::vec3(0.0f, 0.0f, 1.0f));
+            model = glm::translate(model, glm::vec3(-9.76f, -0.96f, 1.25f));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            sillaPatas.Draw(shader1);
+
+            // ---- Mesa 2 (jerarquica con offset Z) -------------------
+            glm::mat4 modelMesa2 = glm::mat4(1.0f);
+            modelMesa2 = glm::translate(modelMesa2, glm::vec3(mesaPosX, mesaPosY, mesaPosZ + 3.5f));
+            modelMesa2 = glm::translate(modelMesa2, glm::vec3(8.30f, 1.5f, -1.73f));
+            modelMesa2 = glm::rotate(modelMesa2, glm::radians(mesaTablonRotX), glm::vec3(1.0f, 0.0f, 0.0f));
+            modelMesa2 = glm::translate(modelMesa2, glm::vec3(-8.30f, -1.5f, 1.73f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelMesa2));
+            tablon.Draw(shader1);
+
+            glm::mat4 modelPata11 = modelMesa2;
+            modelPata11 = glm::translate(modelPata11, glm::vec3(8.30f, 1.5f, -1.73f));
+            modelPata11 = glm::rotate(modelPata11, glm::radians(mesaPata1Rot), glm::vec3(1.0f, 0.0f, 0.0f));
+            modelPata11 = glm::translate(modelPata11, glm::vec3(-8.30f, -1.5f, 1.73f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPata11));
+            p1.Draw(shader1);
+
+            glm::mat4 modelPata22 = modelMesa2;
+            modelPata22 = glm::translate(modelPata22, glm::vec3(8.49f, 1.45f, 0.102f));
+            modelPata22 = glm::rotate(modelPata22, glm::radians(mesaPata2Rot), glm::vec3(1.0f, 0.0f, 0.0f));
+            modelPata22 = glm::translate(modelPata22, glm::vec3(-8.49f, -1.45f, -0.102f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPata22));
+            p2.Draw(shader1);
+
+            // ---- Stand Octanorm 2 -----------------------------------
+            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, standBase, 3.5f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            base.Draw(shader1);
+
+            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, standHoriz, 3.5f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            trave.Draw(shader1);
+
+            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 3.5f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            panel1.Draw(shader1);
+
+            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 3.5f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            panel2.Draw(shader1);
+
+            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 3.5f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            panel3.Draw(shader1);
+
+            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 3.5f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            panel4.Draw(shader1);
+
+
+            // ============(   STAND COMPLEJO (FBX con animacion por nodos)   )=====
+            //  Modelo .fbx que se ensambla solo via animacion de nodos.
+            //  La animacion avanza durante los keyframes finales (playIndex >= 3).
+            // =====================================================================
+            standAnimatorNode.SetTime(standAnimTime);
+            auto transforms = standAnimatorNode.GetFinalTransforms();
+
+            shader1.Use();
+            glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
+
+            glm::mat4 modelStandGeneral = glm::mat4(1.0f);
+            // modelStandGeneral = glm::translate(modelStandGeneral, glm::vec3(...));  // ajustar posicion si se requiere
+            standComplejo.DrawNodeAnimation(shader1, transforms, modelStandGeneral);
+            // ============(   FIN STAND COMPLEJO   )===============================
         }
 
         // ============(   LUCES DE TECHO - CUADRICULA 6   )=========================
@@ -742,6 +888,50 @@ int main()
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
             luzTecho.Draw(shader1);
         }
+
+        // ============(   CRISTAL (transparente) - bloque opcional   )==============
+        //  Descomentar si se quiere dibujar el cristal en posiciones especificas.
+        //  Requiere transparencia activada (ya esta con glBlendFunc en seccion 6).
+        // ==========================================================================
+        // shader1.Use();
+        // glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 1);
+        //
+        // model = glm::mat4(1);
+        // model = glm::translate(model, glm::vec3(16.253f, 2.7417f, -0.14173f));
+        // glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        // cristal.Draw(shader1);
+        //
+        // model = glm::mat4(1);
+        // model = glm::translate(model, glm::vec3(16.253f, 2.7417f, 2.015f));
+        // glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        // cristal.Draw(shader1);
+        //
+        // model = glm::mat4(1);
+        // model = glm::translate(model, glm::vec3(16.253f, 2.7417f, 3.9932f));
+        // glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        // cristal.Draw(shader1);
+        //
+        // model = glm::mat4(1);
+        // model = glm::translate(model, glm::vec3(16.253f, 2.7417f, -2.5471f));
+        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.287f));
+        // glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        // cristal.Draw(shader1);
+        //
+        // model = glm::mat4(1);
+        // model = glm::translate(model, glm::vec3(17.784f, 2.7417f, -3.9583f));
+        // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.397f));
+        // glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        // cristal.Draw(shader1);
+        //
+        // model = glm::mat4(1);
+        // model = glm::translate(model, glm::vec3(20.172f, 2.7417f, -3.9583f));
+        // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        // cristal.Draw(shader1);
+        //
+        // glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 0);
+        // ============(   FIN CRISTAL   )==========================================
 
         glBindVertexArray(0);
         glfwSwapBuffers(window);
@@ -799,17 +989,13 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
         fiestaMode = !fiestaMode;
 
         if (fiestaMode) {
-            // Encender luces automaticamente y reproducir musica
             spotLightOn = true;
             fiestaTimer = 0.0f;
             fiestaOffset = 0;
-
-            // SND_FILENAME = pasamos un path  | SND_LOOP = repetir
-            // SND_ASYNC    = no bloquea       | SND_NODEFAULT = no usar default si falla
             PlaySoundA("Audio/party_1.wav", NULL,
-                       SND_FILENAME | SND_LOOP | SND_ASYNC | SND_NODEFAULT);
-        } else {
-            // Detener musica
+                SND_FILENAME | SND_LOOP | SND_ASYNC | SND_NODEFAULT);
+        }
+        else {
             PlaySoundA(NULL, NULL, 0);
         }
     }
@@ -826,9 +1012,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
         if (sillaAsientoRot >= 60.0f) {
             direccion = 1;
             playIndex = 0;
-        } else {
+        }
+        else {
             direccion = -1;
-            playIndex = FrameIndex - 2;
+            playIndex = FrameIndex - 2;   // con FrameIndex=5, arranca en playIndex=3 (frame 3 -> frame 4 en reversa)
         }
 
         interpolation();
@@ -842,23 +1029,28 @@ void Animation() {
 
     if (i_curr_steps >= i_max_steps) {
         if (direccion == 1) {
-            if (playIndex < FrameIndex - 2) {
+            if (playIndex < FrameIndex - 1) {     // con FrameIndex=5, condicion: playIndex < 4
                 playIndex++;
                 i_curr_steps = 0;
                 interpolation();
-            } else {
+            }
+            else {
                 play = false;
             }
-        } else {
+        }
+        else {
             if (playIndex > 0) {
                 playIndex--;
                 i_curr_steps = 0;
                 interpolation();
-            } else {
+            }
+            else {
                 play = false;
             }
         }
-    } else {
+    }
+    else {
+        // ---- Modelos manuales (silla, mesa, octanorm) ----------------
         sillaPosX += KeyFrame[playIndex].sillaPosXInc * direccion;
         sillaPosY += KeyFrame[playIndex].sillaPosYInc * direccion;
         sillaPosZ += KeyFrame[playIndex].sillaPosZInc * direccion;
@@ -876,6 +1068,40 @@ void Animation() {
         standHoriz += KeyFrame[playIndex].standHorizInc * direccion;
         standBase += KeyFrame[playIndex].standBaseInc * direccion;
         panel += KeyFrame[playIndex].panelInc * direccion;
+
+        // ---- Stand Complejo (FBX) sincronizado con los frames finales ----
+        // El FBX se anima durante el tramo final (playIndex 3 -> 4),
+        // que cubre 2 segmentos de i_max_steps. La direccion de la animacion
+        // se invierte cuando reproducimos en reversa.
+        if (globalStandAnimPtr != nullptr) {
+            float duration = globalStandAnimPtr->GetDuration();
+
+            if (playIndex >= 3) {
+                float pasosTotalesTramoFinal = (float)i_max_steps * 2.0f;
+                float pasosAcumulados = 0.0f;
+
+                float actualSteps = (float)i_curr_steps;
+                if (direccion == -1) {
+                    // En reversa, el paso 0 cuenta como i_max_steps
+                    actualSteps = (float)i_max_steps - (float)i_curr_steps;
+                }
+
+                if (playIndex == 3) {
+                    pasosAcumulados = actualSteps;
+                }
+                else if (playIndex == 4) {
+                    pasosAcumulados = (float)i_max_steps + actualSteps;
+                }
+
+                standAnimTime = (pasosAcumulados / pasosTotalesTramoFinal) * duration;
+            }
+            else {
+                standAnimTime = 0.0f;
+            }
+
+            if (standAnimTime > duration) standAnimTime = duration;
+            if (standAnimTime < 0.0f)     standAnimTime = 0.0f;
+        }
 
         i_curr_steps++;
     }
