@@ -45,15 +45,16 @@ public:
 	vector<Vertex> vertices;
 	vector<GLuint> indices;
 	vector<Texture> textures;
+	string name;
 
 	/*  Functions  */
 	// Constructor
-	Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures)
+	Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures, string name)
 	{
 		this->vertices = vertices;
 		this->indices = indices;
 		this->textures = textures;
-
+		this->name = name;
 		// Now that we have all the required data, set the vertex buffers and its attribute pointers.
 		this->setupMesh();
 	}
