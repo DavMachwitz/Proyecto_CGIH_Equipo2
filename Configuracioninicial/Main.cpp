@@ -168,7 +168,7 @@ float     persona2RotY = 180.0f;
 
 // ---- KeyFrames ------------------------------------------------------
 #define MAX_FRAMES 9
-int i_max_steps = 600;
+int i_max_steps = 200;
 int i_curr_steps = 0;
 
 typedef struct _frame {
@@ -190,6 +190,7 @@ bool  play = false;
 int   playIndex = 0;
 int   direccion = 1;
 bool  mostrarStands = true;
+bool standsArmados = false;
 
 
 // =====================================================================
@@ -292,7 +293,7 @@ int main()
     Shader shader("Shader/core.vs", "Shader/lamp.frag");
     Shader shader1("Shader/modelLoading.vs", "Shader/modelLoading.frag");
     Shader shader2("Shader/lamp.vs", "Shader/modelLoading.frag");
-    Shader lightingShader("Shader/lighting.vs", "Shader/lighting.frag");  // <-- agregado
+    //Shader lightingShader("Shader/lighting.vs", "Shader/lighting.frag");  // <-- agregado
 
 
     // -----------------------------------------------------------------
@@ -704,28 +705,28 @@ int main()
             // =====================================================================
 
             // ---- Silla 1 --------------------------------------------
-            model = glm::mat4(1);
-            model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            // ---- STAND 1: Silla 1 con Jerarquía ----
+            glm::mat4 modelSilla1 = glm::mat4(1.0f);
+            modelSilla1 = glm::translate(modelSilla1, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
+
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelSilla1));
             sillaMarco.Draw(shader1);
 
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
-            model = glm::translate(model, glm::vec3(9.9f, 1.2448f, -1.80f));
-            model = glm::rotate(model, glm::radians(sillaAsientoRot), glm::vec3(0.0f, 0.0f, 1.0f));
-            model = glm::translate(model, glm::vec3(-9.9f, -1.2448f, 1.80f));
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            glm::mat4 modelAsiento = modelSilla1;
+            modelAsiento = glm::translate(modelAsiento, glm::vec3(9.9f, 1.2448f, -1.80f));
+            modelAsiento = glm::rotate(modelAsiento, glm::radians(sillaAsientoRot), glm::vec3(0.0f, 0.0f, 1.0f));
+            modelAsiento = glm::translate(modelAsiento, glm::vec3(-9.9f, -1.2448f, 1.80f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelAsiento));
             sillaAsiento.Draw(shader1);
 
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
-            model = glm::translate(model, glm::vec3(9.76f, 0.96f, -1.25f));
-            model = glm::rotate(model, glm::radians(sillaPatasRot), glm::vec3(0.0f, 0.0f, 1.0f));
-            model = glm::translate(model, glm::vec3(-9.76f, -0.96f, 1.25f));
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            glm::mat4 modelPatas = modelSilla1;
+            modelPatas = glm::translate(modelPatas, glm::vec3(9.76f, 0.96f, -1.25f));
+            modelPatas = glm::rotate(modelPatas, glm::radians(sillaPatasRot), glm::vec3(0.0f, 0.0f, 1.0f));
+            modelPatas = glm::translate(modelPatas, glm::vec3(-9.76f, -0.96f, 1.25f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPatas));
             sillaPatas.Draw(shader1);
 
-            // ---- Mesa 1 (jerarquica: pata hereda inclinacion del tablon) ----
+            // ---- Mesa 1 ----
             glm::mat4 modelMesa = glm::mat4(1.0f);
             modelMesa = glm::translate(modelMesa, glm::vec3(mesaPosX, mesaPosY, mesaPosZ));
             modelMesa = glm::translate(modelMesa, glm::vec3(8.30f, 1.5f, -1.73f));
@@ -747,60 +748,58 @@ int main()
             modelPata2 = glm::translate(modelPata2, glm::vec3(-8.49f, -1.45f, -0.102f));
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPata2));
             p2.Draw(shader1);
+            if (standsArmados) {
+                // ---- Stand Octanorm 1 -----------------------------------
+                model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, standBase, 0.0f));
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                base.Draw(shader1);
 
-            // ---- Stand Octanorm 1 -----------------------------------
-            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, standBase, 0.0f));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            base.Draw(shader1);
+                model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, standHoriz, 0.0f));
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                trave.Draw(shader1);
 
-            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, standHoriz, 0.0f));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            trave.Draw(shader1);
+                model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 0.0f));
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                panel1.Draw(shader1);
 
-            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 0.0f));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            panel1.Draw(shader1);
+                model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 0.0f));
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                panel2.Draw(shader1);
 
-            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 0.0f));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            panel2.Draw(shader1);
+                model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 0.0f));
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                panel3.Draw(shader1);
 
-            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 0.0f));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            panel3.Draw(shader1);
-
-            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 0.0f));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            panel4.Draw(shader1);
-
-
+                model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 0.0f));
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                panel4.Draw(shader1);
+            }
             // ============(   STAND 2: Silla + Mesa + Octanorm (offset Z)   )======
             //  Segundo set de mobiliario, desplazado en Z.
             // =====================================================================
 
             // ---- Silla 2 --------------------------------------------
-            model = glm::mat4(1);
-            model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ + 4.7f));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            // --- SILLA 2 (Con Jerarquía) ---
+            glm::mat4 modelSilla2 = glm::mat4(1.0f);
+            modelSilla2 = glm::translate(modelSilla2, glm::vec3(sillaPosX, sillaPosY, sillaPosZ + 4.7f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelSilla2));
             sillaMarco.Draw(shader1);
 
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ + 4.7f));
-            model = glm::translate(model, glm::vec3(9.9f, 1.2448f, -1.80f));
-            model = glm::rotate(model, glm::radians(sillaAsientoRot), glm::vec3(0.0f, 0.0f, 1.0f));
-            model = glm::translate(model, glm::vec3(-9.9f, -1.2448f, 1.80f));
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            glm::mat4 modelAsiento2 = modelSilla2; 
+            modelAsiento2 = glm::translate(modelAsiento2, glm::vec3(9.9f, 1.2448f, -1.80f)); 
+            modelAsiento2 = glm::rotate(modelAsiento2, glm::radians(sillaAsientoRot), glm::vec3(0.0f, 0.0f, 1.0f));
+            modelAsiento2 = glm::translate(modelAsiento2, glm::vec3(-9.9f, -1.2448f, 1.80f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelAsiento2));
             sillaAsiento.Draw(shader1);
 
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, glm::vec3(sillaPosX, sillaPosY, sillaPosZ + 4.7f));
-            model = glm::translate(model, glm::vec3(9.76f, 0.96f, -1.25f));
-            model = glm::rotate(model, glm::radians(sillaPatasRot), glm::vec3(0.0f, 0.0f, 1.0f));
-            model = glm::translate(model, glm::vec3(-9.76f, -0.96f, 1.25f));
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+            glm::mat4 modelPatas2 = modelSilla2;
+            modelPatas2 = glm::translate(modelPatas2, glm::vec3(9.76f, 0.96f, -1.25f));
+            modelPatas2 = glm::rotate(modelPatas2, glm::radians(sillaPatasRot), glm::vec3(0.0f, 0.0f, 1.0f));
+            modelPatas2 = glm::translate(modelPatas2, glm::vec3(-9.76f, -0.96f, 1.25f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPatas2));
             sillaPatas.Draw(shader1);
 
-            // ---- Mesa 2 (jerarquica con offset Z) -------------------
+            // ---- Mesa 2 -------------------
             glm::mat4 modelMesa2 = glm::mat4(1.0f);
             modelMesa2 = glm::translate(modelMesa2, glm::vec3(mesaPosX, mesaPosY, mesaPosZ + 3.5f));
             modelMesa2 = glm::translate(modelMesa2, glm::vec3(8.30f, 1.5f, -1.73f));
@@ -823,46 +822,47 @@ int main()
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPata22));
             p2.Draw(shader1);
 
-            // ---- Stand Octanorm 2 -----------------------------------
-            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, standBase, 3.5f));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            base.Draw(shader1);
+            if (standsArmados) {
+                // ---- Stand Octanorm 2 -----------------------------------
+                model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, standBase, 3.5f));
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                base.Draw(shader1);
 
-            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, standHoriz, 3.5f));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            trave.Draw(shader1);
+                model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, standHoriz, 3.5f));
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                trave.Draw(shader1);
 
-            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 3.5f));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            panel1.Draw(shader1);
+                model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 3.5f));
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                panel1.Draw(shader1);
 
-            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 3.5f));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            panel2.Draw(shader1);
+                model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 3.5f));
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                panel2.Draw(shader1);
 
-            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 3.5f));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            panel3.Draw(shader1);
+                model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 3.5f));
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                panel3.Draw(shader1);
 
-            model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 3.5f));
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-            panel4.Draw(shader1);
+                model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 3.5f));
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                panel4.Draw(shader1);
+            
+                // ============(   STAND COMPLEJO (FBX con animacion por nodos)   )=====
+                //  Modelo .fbx que se ensambla solo via animacion de nodos.
+                //  La animacion avanza durante los keyframes finales (playIndex >= 3).
+                // =====================================================================
+                standAnimatorNode.SetTime(standAnimTime);
+                auto transforms = standAnimatorNode.GetFinalTransforms();
 
+                shader1.Use();
+                glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
 
-            // ============(   STAND COMPLEJO (FBX con animacion por nodos)   )=====
-            //  Modelo .fbx que se ensambla solo via animacion de nodos.
-            //  La animacion avanza durante los keyframes finales (playIndex >= 3).
-            // =====================================================================
-            standAnimatorNode.SetTime(standAnimTime);
-            auto transforms = standAnimatorNode.GetFinalTransforms();
-
-            shader1.Use();
-            glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
-
-            glm::mat4 modelStandGeneral = glm::mat4(1.0f);
-            // modelStandGeneral = glm::translate(modelStandGeneral, glm::vec3(...));  // ajustar posicion si se requiere
-            standComplejo.DrawNodeAnimation(shader1, transforms, modelStandGeneral);
-            // ============(   FIN STAND COMPLEJO   )===============================
+                glm::mat4 modelStandGeneral = glm::mat4(1.0f);
+                // modelStandGeneral = glm::translate(modelStandGeneral, glm::vec3(...));  // ajustar posicion si se requiere
+                standComplejo.DrawNodeAnimation(shader1, transforms, modelStandGeneral);
+                // ============(   FIN STAND COMPLEJO   )===============================
+            }
         }
 
         // ============(   LUCES DE TECHO - CUADRICULA 6   )=========================
@@ -889,48 +889,45 @@ int main()
             luzTecho.Draw(shader1);
         }
 
-        // ============(   CRISTAL (transparente) - bloque opcional   )==============
-        //  Descomentar si se quiere dibujar el cristal en posiciones especificas.
-        //  Requiere transparencia activada (ya esta con glBlendFunc en seccion 6).
-        // ==========================================================================
-        // shader1.Use();
-        // glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 1);
-        //
-        // model = glm::mat4(1);
-        // model = glm::translate(model, glm::vec3(16.253f, 2.7417f, -0.14173f));
-        // glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        // cristal.Draw(shader1);
-        //
-        // model = glm::mat4(1);
-        // model = glm::translate(model, glm::vec3(16.253f, 2.7417f, 2.015f));
-        // glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        // cristal.Draw(shader1);
-        //
-        // model = glm::mat4(1);
-        // model = glm::translate(model, glm::vec3(16.253f, 2.7417f, 3.9932f));
-        // glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        // cristal.Draw(shader1);
-        //
-        // model = glm::mat4(1);
-        // model = glm::translate(model, glm::vec3(16.253f, 2.7417f, -2.5471f));
-        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.287f));
-        // glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        // cristal.Draw(shader1);
-        //
-        // model = glm::mat4(1);
-        // model = glm::translate(model, glm::vec3(17.784f, 2.7417f, -3.9583f));
-        // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        // model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.397f));
-        // glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        // cristal.Draw(shader1);
-        //
-        // model = glm::mat4(1);
-        // model = glm::translate(model, glm::vec3(20.172f, 2.7417f, -3.9583f));
-        // model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        // glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        // cristal.Draw(shader1);
-        //
-        // glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 0);
+        // ============(  CRISTAL  )==============
+         shader1.Use();
+         glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 1);
+        
+         model = glm::mat4(1);
+         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, -0.14173f));
+         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+         cristal.Draw(shader1);
+        
+         model = glm::mat4(1);
+         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, 2.015f));
+         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+         cristal.Draw(shader1);
+        
+         model = glm::mat4(1);
+         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, 3.9932f));
+         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+         cristal.Draw(shader1);
+        
+         model = glm::mat4(1);
+         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, -2.5471f));
+         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.287f));
+         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+         cristal.Draw(shader1);
+        
+         model = glm::mat4(1);
+         model = glm::translate(model, glm::vec3(17.784f, 2.7417f, -3.9583f));
+         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.397f));
+         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+         cristal.Draw(shader1);
+        
+         model = glm::mat4(1);
+         model = glm::translate(model, glm::vec3(20.172f, 2.7417f, -3.9583f));
+         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+         cristal.Draw(shader1);
+        
+         glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 0);
         // ============(   FIN CRISTAL   )==========================================
 
         glBindVertexArray(0);
@@ -1012,10 +1009,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
         if (sillaAsientoRot >= 60.0f) {
             direccion = 1;
             playIndex = 0;
+            standsArmados = true;
         }
         else {
             direccion = -1;
-            playIndex = FrameIndex - 2;   // con FrameIndex=5, arranca en playIndex=3 (frame 3 -> frame 4 en reversa)
+            playIndex = FrameIndex - 2;   
         }
 
         interpolation();
@@ -1046,6 +1044,7 @@ void Animation() {
             }
             else {
                 play = false;
+                standsArmados = false;
             }
         }
     }
