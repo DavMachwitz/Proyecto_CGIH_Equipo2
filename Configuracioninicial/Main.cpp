@@ -347,11 +347,14 @@ int main()
     // ---- Personas (con esqueleto) -----------------------------------
     Model persona1((char*)"Models/People/person1.dae");
     Model persona2((char*)"Models/People/person2.dae");
+    Model personaSaludo((char*)"Models/People/personWaving.fbx");
 
     ModelAnimation danceAnim("Models/People/person1.dae", persona1.GetBoneInfoMap(), persona1.GetBoneCount());
     Animator       animator(&danceAnim);
     ModelAnimation danceAnim2("Models/People/person2.dae", persona2.GetBoneInfoMap(), persona2.GetBoneCount());
     Animator       animator2(&danceAnim2);
+    ModelAnimation wavingAnim("Models/People/personWaving.fbx", personaSaludo.GetBoneInfoMap(), personaSaludo.GetBoneCount());
+    Animator animatorSaludo(&wavingAnim);
 
 
     // -----------------------------------------------------------------
@@ -864,7 +867,26 @@ int main()
                 // ============(   FIN STAND COMPLEJO   )===============================
             }
         }
+        // =============================================================
+        //  DIBUJO 5: EXPOSITOR
+        // =============================================================
+        glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_TRUE);
 
+        animatorSaludo.UpdateAnimation(deltaTime);
+
+        glm::mat4 modelS = glm::mat4(1.0f);
+        modelS = glm::scale(modelS, glm::vec3(0.01f));
+
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelS));
+
+        auto transformsS = animatorSaludo.GetFinalBoneMatrices();
+        for (int i = 0; i < transformsS.size(); i++) {
+            string uName = "finalBonesMatrices[" + to_string(i) + "]";
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, uName.c_str()), 1, GL_FALSE, &transformsS[i][0][0]);
+        }
+
+        personaSaludo.Draw(shader1);
+        glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
         // ============(   LUCES DE TECHO - CUADRICULA 6   )=========================
         for (int row = 0; row < 2; row++) {
             for (int col = 0; col < 3; col++) {
@@ -890,7 +912,7 @@ int main()
         }
 
         // ============(  CRISTAL  )==============
-         shader1.Use();
+        /* shader1.Use();
          glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 1);
         
          model = glm::mat4(1);
@@ -927,7 +949,7 @@ int main()
          glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
          cristal.Draw(shader1);
         
-         glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 0);
+         glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 0);*/
         // ============(   FIN CRISTAL   )==========================================
 
         glBindVertexArray(0);
