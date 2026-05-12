@@ -875,7 +875,9 @@ int main()
         animatorSaludo.UpdateAnimation(deltaTime);
 
         glm::mat4 modelS = glm::mat4(1.0f);
-        modelS = glm::scale(modelS, glm::vec3(0.01f));
+        modelS = glm::translate(modelS, glm::vec3(9.15f, 0.38141f, 2.9f));
+        modelS = glm::rotate(modelS, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        modelS = glm::scale(modelS, glm::vec3(0.013f));
 
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelS));
 

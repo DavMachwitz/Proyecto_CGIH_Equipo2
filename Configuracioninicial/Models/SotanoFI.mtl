@@ -1,6 +1,16 @@
 # Blender 5.0.1 MTL File: 'SotanoFI.blend'
 # www.blender.org
 
+newmtl Base_Recep
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Textures/Textura_baseRecep.png
+
 newmtl Mar2_Piso
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
@@ -191,6 +201,16 @@ d 1.000000
 illum 2
 map_Kd Textures/Textura_Reciclaje.png
 
+newmtl Mesa_Recep
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Textures/Textura_mesaRecep.png
+
 newmtl Text_Placa
 Ns 250.000000
 Ka 1.000000 1.000000 1.000000
@@ -250,3 +270,4 @@ Ni 1.450000
 d 1.000000
 illum 3
 map_Kd Textures/old_concrete-stairs-01_texture.png
+
