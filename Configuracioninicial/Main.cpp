@@ -78,6 +78,9 @@ bool    mouseCaptured = true;
 // ---- Estado del reflector -------------------------------------------
 bool    spotLightOn = false;
 
+// ---- Expositor Stand (Saludo por proximidad) -----------------------
+glm::vec3 posExpositorStand = glm::vec3(9.15f, 0.38f, 2.9f);
+float radioDeteccion = 8.0f; 
 
 // =====================================================================
 // 2.b) MODO FIESTA (luces de colores + musica)
@@ -355,6 +358,7 @@ int main()
     Animator       animator2(&danceAnim2);
     ModelAnimation wavingAnim("Models/People/personWaving.fbx", personaSaludo.GetBoneInfoMap(), personaSaludo.GetBoneCount());
     Animator animatorSaludo(&wavingAnim);
+    animatorSaludo.UpdateAnimation(0.0f);
 
 
     // -----------------------------------------------------------------
@@ -868,38 +872,41 @@ int main()
             }
         }
         // =============================================================
-        //  DIBUJO 5: EXPOSITOR
+        //  DIBUJO 5: EXPOSITOR (Saluda si está armado y cerca)
         // =============================================================
-        glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_TRUE);
+        if (standsArmados && !play && playIndex == 4) {
 
-        animatorSaludo.UpdateAnimation(deltaTime);
+            // USAMOS GetPosition() PARA EVITAR EL ERROR DE ACCESO
+            float distancia = glm::distance(camera.GetPosition(), posExpositorStand);
 
-        glm::mat4 modelS = glm::mat4(1.0f);
-        modelS = glm::translate(modelS, glm::vec3(9.15f, 0.38141f, 2.9f));
-        modelS = glm::rotate(modelS, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        modelS = glm::scale(modelS, glm::vec3(0.013f));
-
-        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelS));
-
-        auto transformsS = animatorSaludo.GetFinalBoneMatrices();
-        for (int i = 0; i < transformsS.size(); i++) {
-            string uName = "finalBonesMatrices[" + to_string(i) + "]";
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, uName.c_str()), 1, GL_FALSE, &transformsS[i][0][0]);
-        }
-
-        personaSaludo.Draw(shader1);
-        glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
-        // ============(   LUCES DE TECHO - CUADRICULA 6   )=========================
-        for (int row = 0; row < 2; row++) {
-            for (int col = 0; col < 3; col++) {
-                model = glm::mat4(1);
-                model = glm::translate(model, glm::vec3(luzPosX[col], luzTechoPos.y, luzPosZ[row]));
-                model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-                model = glm::rotate(model, glm::radians(luzTechoRotY), glm::vec3(0.0f, 1.0f, 0.0f));
-                model = glm::scale(model, luzTechoScale);
-                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-                luzTecho.Draw(shader1);
+            if (distancia < radioDeteccion) {
+                animatorSaludo.UpdateAnimation(deltaTime);
             }
+            else {
+                animatorSaludo.PlayAnimation(&wavingAnim);
+                animatorSaludo.UpdateAnimation(0.0f);
+            }
+
+            shader1.Use();
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "projection"), 1, GL_FALSE, glm::value_ptr(proj));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
+            glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_TRUE);
+
+            glm::mat4 modelS = glm::mat4(1.0f);
+            modelS = glm::translate(modelS, posExpositorStand);
+            modelS = glm::rotate(modelS, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            modelS = glm::scale(modelS, glm::vec3(0.013f));
+
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelS));
+
+            auto transformsS = animatorSaludo.GetFinalBoneMatrices();
+            for (int i = 0; i < transformsS.size(); i++) {
+                string uName = "finalBonesMatrices[" + to_string(i) + "]";
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, uName.c_str()), 1, GL_FALSE, &transformsS[i][0][0]);
+            }
+
+            personaSaludo.Draw(shader1);
+            glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
         }
 
         // ============(   LUCES EXTRA (9)   )=======================================
