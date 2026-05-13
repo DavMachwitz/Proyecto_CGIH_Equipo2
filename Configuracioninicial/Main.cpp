@@ -275,7 +275,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Planta Base Facultad", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Equipo2_ProyectoFinal", nullptr, nullptr);
     if (!window) { glfwTerminate(); return EXIT_FAILURE; }
     glfwMakeContextCurrent(window);
     glfwGetFramebufferSize(window, &SCREEN_WIDTH, &SCREEN_HEIGHT);
@@ -951,7 +951,47 @@ int main()
             luzTecho.Draw(shader1);
         }
         // ============(   FIN LUCES EXTRA   )=======================================
+         // ============(  CRISTAL  )==============
+         shader1.Use();
+         glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 1);
 
+         model = glm::mat4(1);
+         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, -0.14173f));
+         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+         cristal.Draw(shader1);
+
+         model = glm::mat4(1);
+         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, 2.015f));
+         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+         cristal.Draw(shader1);
+
+         model = glm::mat4(1);
+         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, 3.9932f));
+         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+         cristal.Draw(shader1);
+
+         model = glm::mat4(1);
+         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, -2.5471f));
+         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.287f));
+         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+         cristal.Draw(shader1);
+
+         model = glm::mat4(1);
+         model = glm::translate(model, glm::vec3(17.784f, 2.7417f, -3.9583f));
+         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.397f));
+         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+         cristal.Draw(shader1);
+
+         model = glm::mat4(1);
+         model = glm::translate(model, glm::vec3(20.172f, 2.7417f, -3.9583f));
+         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+         cristal.Draw(shader1);
+
+         glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 0);
+         // ============(   FIN CRISTAL   )==========================================
+         
         glBindVertexArray(0);
         glfwSwapBuffers(window);
     }
