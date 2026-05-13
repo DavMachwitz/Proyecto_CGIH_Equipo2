@@ -7,15 +7,16 @@
 //                  + MODO FIESTA (Tecla G): luces de colores + musica
 //                  + Stand Complejo (FBX con animacion por nodos)
 //                  + Doble set de stands (silla 2, mesa 2, octanorm 2)
+//                  + Expositor que saluda por proximidad
 //
 //  CONTROLES:
-//     W/A/S/D     : moverse (horizontal, requiere fix en Camera.h)
-//     M / ESC     : capturar / liberar mouse
-//     1 / 2 / 3   : cambiar hora del dia
-//     F           : encender / apagar reflectores
-//     P           : reproducir animacion (armar / desarmar mobiliario)
-//     L           : mostrar / ocultar stands
-//     G           : MODO FIESTA (luces de colores + musica)
+//      W/A/S/D     : moverse (horizontal, requiere fix en Camera.h)
+//      M / ESC     : capturar / liberar mouse
+//      1 / 2 / 3   : cambiar hora del dia
+//      F           : encender / apagar reflectores
+//      P           : reproducir animacion (armar / desarmar mobiliario)
+//      L           : mostrar / ocultar stands
+//      G           : MODO FIESTA (luces de colores + musica)
 // =====================================================================
 // =====================================================================
 
@@ -42,8 +43,8 @@
 #include "Model.h"
 #include "ModelAnimation.h"
 #include "Animator.h"
-#include "NodeAnimation.h"      // <-- agregado: animacion por nodos (FBX)
-#include "NodeAnimator.h"       // <-- agregado: reproductor de animacion por nodos
+#include "NodeAnimation.h"      // animacion por nodos (FBX)
+#include "NodeAnimator.h"       // reproductor de animacion por nodos
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -78,9 +79,10 @@ bool    mouseCaptured = true;
 // ---- Estado del reflector -------------------------------------------
 bool    spotLightOn = false;
 
-// ---- Expositor Stand (Saludo por proximidad) -----------------------
+// ---- Expositor Stand (Saludo por proximidad) ------------------------
 glm::vec3 posExpositorStand = glm::vec3(9.15f, 0.38f, 2.9f);
-float radioDeteccion = 8.0f; 
+float     radioDeteccion = 8.0f;
+
 
 // =====================================================================
 // 2.b) MODO FIESTA (luces de colores + musica)
@@ -193,7 +195,7 @@ bool  play = false;
 int   playIndex = 0;
 int   direccion = 1;
 bool  mostrarStands = true;
-bool standsArmados = false;
+bool  standsArmados = false;
 
 
 // =====================================================================
@@ -296,7 +298,6 @@ int main()
     Shader shader("Shader/core.vs", "Shader/lamp.frag");
     Shader shader1("Shader/modelLoading.vs", "Shader/modelLoading.frag");
     Shader shader2("Shader/lamp.vs", "Shader/modelLoading.frag");
-    //Shader lightingShader("Shader/lighting.vs", "Shader/lighting.frag");  // <-- agregado
 
 
     // -----------------------------------------------------------------
@@ -309,10 +310,11 @@ int main()
     Model luzTecho((char*)"Models/luz_techo.obj");
     Model upstairs((char*)"Models/Upstairs.obj");
 
-    // ---- Fondos -----------------------------------------------------
+    // ---- Fondos e Instalaciones Exteriores --------------------------
     Model fondo((char*)"Models/Fondo_Final.obj");
     Model fondoPuente((char*)"Models/fondo_puente.obj");
     Model fondoCorredor((char*)"Models/fondo_corredor.obj");
+    Model pisoFuera((char*)"Models/piso_fuera.obj");
 
     // ---- Estatuas ---------------------------------------------------
     Model estatua1((char*)"Models/EstatuaEscalera.obj");
@@ -357,7 +359,7 @@ int main()
     ModelAnimation danceAnim2("Models/People/person2.dae", persona2.GetBoneInfoMap(), persona2.GetBoneCount());
     Animator       animator2(&danceAnim2);
     ModelAnimation wavingAnim("Models/People/personWaving.fbx", personaSaludo.GetBoneInfoMap(), personaSaludo.GetBoneCount());
-    Animator animatorSaludo(&wavingAnim);
+    Animator       animatorSaludo(&wavingAnim);
     animatorSaludo.UpdateAnimation(0.0f);
 
 
@@ -491,8 +493,13 @@ int main()
     float     fondoPuenteRotY = 0.0f;
 
     glm::vec3 fondoCorredorPos = glm::vec3(21.0f, 0.0f, -8.9f);
-    glm::vec3 fondoCorredorScale = glm::vec3(0.27f, 0.24f, 0.24f);
+    glm::vec3 fondoCorredorScale = glm::vec3(0.61f, 0.24f, 0.24f);
     float     fondoCorredorRotY = 0.0f;
+
+    // --- NUEVO PISO EXTERIOR ---
+    glm::vec3 pisoFueraPos = glm::vec3(30.0f, 0.7f, 20.0f);
+    glm::vec3 pisoFueraScale = glm::vec3(1.5f, 1.5f, 1.5f);
+    float     pisoFueraRotY = 0.0f;
 
 
     // =================================================================
@@ -642,6 +649,15 @@ int main()
         fondoCorredor.Draw(shader1);
         // ============(   FIN FONDO_CORREDOR   )====================================
 
+        // ============(   PISO EXTERIOR (escala y posicion editables)   )===========
+        model = glm::mat4(1);
+        model = glm::translate(model, pisoFueraPos);
+        model = glm::rotate(model, glm::radians(pisoFueraRotY), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::scale(model, pisoFueraScale);
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        pisoFuera.Draw(shader1);
+        // ============(   FIN PISO EXTERIOR   )=====================================
+
         // ---- Estatua escalera ---------------------------------------
         model = glm::mat4(1); model = glm::translate(model, glm::vec3(-3.0f, 0.0f, 2.488f));
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
@@ -711,11 +727,9 @@ int main()
             //  Primer set de mobiliario (posicion base).
             // =====================================================================
 
-            // ---- Silla 1 --------------------------------------------
-            // ---- STAND 1: Silla 1 con Jerarquía ----
+            // ---- STAND 1: Silla 1 con Jerarquia ----
             glm::mat4 modelSilla1 = glm::mat4(1.0f);
             modelSilla1 = glm::translate(modelSilla1, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
-
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelSilla1));
             sillaMarco.Draw(shader1);
 
@@ -755,6 +769,7 @@ int main()
             modelPata2 = glm::translate(modelPata2, glm::vec3(-8.49f, -1.45f, -0.102f));
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPata2));
             p2.Draw(shader1);
+
             if (standsArmados) {
                 // ---- Stand Octanorm 1 -----------------------------------
                 model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, standBase, 0.0f));
@@ -781,19 +796,19 @@ int main()
                 glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
                 panel4.Draw(shader1);
             }
+
             // ============(   STAND 2: Silla + Mesa + Octanorm (offset Z)   )======
             //  Segundo set de mobiliario, desplazado en Z.
             // =====================================================================
 
-            // ---- Silla 2 --------------------------------------------
-            // --- SILLA 2 (Con Jerarquía) ---
+            // ---- Silla 2 con Jerarquia ----
             glm::mat4 modelSilla2 = glm::mat4(1.0f);
             modelSilla2 = glm::translate(modelSilla2, glm::vec3(sillaPosX, sillaPosY, sillaPosZ + 4.7f));
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelSilla2));
             sillaMarco.Draw(shader1);
 
-            glm::mat4 modelAsiento2 = modelSilla2; 
-            modelAsiento2 = glm::translate(modelAsiento2, glm::vec3(9.9f, 1.2448f, -1.80f)); 
+            glm::mat4 modelAsiento2 = modelSilla2;
+            modelAsiento2 = glm::translate(modelAsiento2, glm::vec3(9.9f, 1.2448f, -1.80f));
             modelAsiento2 = glm::rotate(modelAsiento2, glm::radians(sillaAsientoRot), glm::vec3(0.0f, 0.0f, 1.0f));
             modelAsiento2 = glm::translate(modelAsiento2, glm::vec3(-9.9f, -1.2448f, 1.80f));
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelAsiento2));
@@ -806,7 +821,7 @@ int main()
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPatas2));
             sillaPatas.Draw(shader1);
 
-            // ---- Mesa 2 -------------------
+            // ---- Mesa 2 ----
             glm::mat4 modelMesa2 = glm::mat4(1.0f);
             modelMesa2 = glm::translate(modelMesa2, glm::vec3(mesaPosX, mesaPosY, mesaPosZ + 3.5f));
             modelMesa2 = glm::translate(modelMesa2, glm::vec3(8.30f, 1.5f, -1.73f));
@@ -854,7 +869,7 @@ int main()
                 model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, panel, 3.5f));
                 glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
                 panel4.Draw(shader1);
-            
+
                 // ============(   STAND COMPLEJO (FBX con animacion por nodos)   )=====
                 //  Modelo .fbx que se ensambla solo via animacion de nodos.
                 //  La animacion avanza durante los keyframes finales (playIndex >= 3).
@@ -866,17 +881,16 @@ int main()
                 glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
 
                 glm::mat4 modelStandGeneral = glm::mat4(1.0f);
-                // modelStandGeneral = glm::translate(modelStandGeneral, glm::vec3(...));  // ajustar posicion si se requiere
                 standComplejo.DrawNodeAnimation(shader1, transforms, modelStandGeneral);
                 // ============(   FIN STAND COMPLEJO   )===============================
             }
         }
+
         // =============================================================
-        //  DIBUJO 5: EXPOSITOR (Saluda si está armado y cerca)
+        //  DIBUJO 5: EXPOSITOR (Saluda si esta armado y cerca)
         // =============================================================
         if (standsArmados && !play && playIndex == 4) {
 
-            // USAMOS GetPosition() PARA EVITAR EL ERROR DE ACCESO
             float distancia = glm::distance(camera.GetPosition(), posExpositorStand);
 
             if (distancia < radioDeteccion) {
@@ -909,6 +923,23 @@ int main()
             glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
         }
 
+        // ============(   LUCES DE TECHO - CUADRICULA 6   )=========================
+        //  6 lamparas en cuadricula 3x2 sobre el patio central.
+        //  ESTE BLOQUE FALTABA - por eso desaparecieron las lamparas.
+        // ==========================================================================
+        for (int row = 0; row < 2; row++) {
+            for (int col = 0; col < 3; col++) {
+                model = glm::mat4(1);
+                model = glm::translate(model, glm::vec3(luzPosX[col], luzTechoPos.y, luzPosZ[row]));
+                model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+                model = glm::rotate(model, glm::radians(luzTechoRotY), glm::vec3(0.0f, 1.0f, 0.0f));
+                model = glm::scale(model, luzTechoScale);
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                luzTecho.Draw(shader1);
+            }
+        }
+        // ============(   FIN CUADRICULA   )========================================
+
         // ============(   LUCES EXTRA (9)   )=======================================
         for (const auto& pos : lucesExtra) {
             model = glm::mat4(1);
@@ -919,47 +950,7 @@ int main()
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
             luzTecho.Draw(shader1);
         }
-
-        // ============(  CRISTAL  )==============
-        /* shader1.Use();
-         glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 1);
-        
-         model = glm::mat4(1);
-         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, -0.14173f));
-         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-         cristal.Draw(shader1);
-        
-         model = glm::mat4(1);
-         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, 2.015f));
-         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-         cristal.Draw(shader1);
-        
-         model = glm::mat4(1);
-         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, 3.9932f));
-         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-         cristal.Draw(shader1);
-        
-         model = glm::mat4(1);
-         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, -2.5471f));
-         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.287f));
-         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-         cristal.Draw(shader1);
-        
-         model = glm::mat4(1);
-         model = glm::translate(model, glm::vec3(17.784f, 2.7417f, -3.9583f));
-         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.397f));
-         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-         cristal.Draw(shader1);
-        
-         model = glm::mat4(1);
-         model = glm::translate(model, glm::vec3(20.172f, 2.7417f, -3.9583f));
-         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-         cristal.Draw(shader1);
-        
-         glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 0);*/
-        // ============(   FIN CRISTAL   )==========================================
+        // ============(   FIN LUCES EXTRA   )=======================================
 
         glBindVertexArray(0);
         glfwSwapBuffers(window);
@@ -1044,7 +1035,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
         }
         else {
             direccion = -1;
-            playIndex = FrameIndex - 2;   
+            playIndex = FrameIndex - 2;
         }
 
         interpolation();
@@ -1100,9 +1091,6 @@ void Animation() {
         panel += KeyFrame[playIndex].panelInc * direccion;
 
         // ---- Stand Complejo (FBX) sincronizado con los frames finales ----
-        // El FBX se anima durante el tramo final (playIndex 3 -> 4),
-        // que cubre 2 segmentos de i_max_steps. La direccion de la animacion
-        // se invierte cuando reproducimos en reversa.
         if (globalStandAnimPtr != nullptr) {
             float duration = globalStandAnimPtr->GetDuration();
 
@@ -1112,7 +1100,6 @@ void Animation() {
 
                 float actualSteps = (float)i_curr_steps;
                 if (direccion == -1) {
-                    // En reversa, el paso 0 cuenta como i_max_steps
                     actualSteps = (float)i_max_steps - (float)i_curr_steps;
                 }
 
