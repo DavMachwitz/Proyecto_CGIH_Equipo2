@@ -24,6 +24,9 @@
     <ClInclude Include="Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\modelLoading.frag">
@@ -36,6 +39,12 @@
       <Filter>Resource Files\Shader</Filter>
     </None>
     <None Include="Shader\lamp.frag">
+      <Filter>Resource Files\Shader</Filter>
+    </None>
+    <None Include="Shader\SkyBox.frag">
+      <Filter>Resource Files\Shader</Filter>
+    </None>
+    <None Include="Shader\SkyBox.vs">
       <Filter>Resource Files\Shader</Filter>
     </None>
   </ItemGroup>

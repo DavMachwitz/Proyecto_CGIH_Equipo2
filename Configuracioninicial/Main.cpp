@@ -1,6 +1,16 @@
 ﻿// =====================================================================
 // =====================================================================
-//  PROYECTO: Planta Base - Facultad
+// Planta Base - Facultad
+// 
+// Galindo Granados Abner Alejandro
+// 320001567
+// 
+// Nava Benitez David Emilio
+// 320291599
+// 
+// Ugalde Santos Atzin
+// 319057399
+// 
 //  Implementacion: Sistema Dia/Noche + Reflectores Multiples (Tecla F)
 //                  + Animacion KeyFrames (Tecla P) - 5 frames
 //                  + Personas con esqueleto animado
@@ -8,6 +18,7 @@
 //                  + Stand Complejo (FBX con animacion por nodos)
 //                  + Doble set de stands (silla 2, mesa 2, octanorm 2)
 //                  + Expositor que saluda por proximidad
+//                  + SKYBOX (cubemap sensible al dia/tarde/noche)
 //
 //  CONTROLES:
 //      W/A/S/D     : moverse (horizontal, requiere fix en Camera.h)
@@ -43,8 +54,9 @@
 #include "Model.h"
 #include "ModelAnimation.h"
 #include "Animator.h"
-#include "NodeAnimation.h"      // animacion por nodos (FBX)
-#include "NodeAnimator.h"       // reproductor de animacion por nodos
+#include "NodeAnimation.h"
+#include "NodeAnimator.h"
+#include "Texture.h"            // <-- agregado: usa TextureLoading::LoadCubemap
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -112,6 +124,64 @@ glm::vec3 fiestaColors[15] = {
 };
 
 const glm::vec3 colorLuzNormal = glm::vec3(0.5f, 0.5f, 0.42f);
+
+
+// =====================================================================
+// 2.c) SKYBOX (cubemap envolvente)
+// =====================================================================
+//  36 vertices del cubo (sin texturas ni normales: solo posiciones)
+//  El cubemap se mapea automaticamente por la direccion del vector.
+// =====================================================================
+GLfloat skyboxVertices[] = {
+    -1.0f,  1.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+    -1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f
+};
+
+GLuint skyboxIndices[] = {
+    0,  1,  2,  3,
+    4,  5,  6,  7,
+    8,  9, 10, 11,
+   12, 13, 14, 15,
+   16, 17, 18, 19,
+   20, 21, 22, 23,
+   24, 25, 26, 27,
+   28, 29, 30, 31,
+   32, 33, 34, 35
+};
 
 
 // =====================================================================
@@ -298,6 +368,7 @@ int main()
     Shader shader("Shader/core.vs", "Shader/lamp.frag");
     Shader shader1("Shader/modelLoading.vs", "Shader/modelLoading.frag");
     Shader shader2("Shader/lamp.vs", "Shader/modelLoading.frag");
+    Shader skyboxShader("Shader/SkyBox.vs", "Shader/SkyBox.frag");
 
 
     // -----------------------------------------------------------------
@@ -361,6 +432,44 @@ int main()
     ModelAnimation wavingAnim("Models/People/personWaving.fbx", personaSaludo.GetBoneInfoMap(), personaSaludo.GetBoneCount());
     Animator       animatorSaludo(&wavingAnim);
     animatorSaludo.UpdateAnimation(0.0f);
+
+
+    // -----------------------------------------------------------------
+    // 8.b) SETUP DEL SKYBOX (VAO/VBO/EBO + carga del cubemap)
+    //  Usa TextureLoading::LoadCubemap de Texture.h (con stb_image)
+    // -----------------------------------------------------------------
+    GLuint skyboxVAO, skyboxVBO, skyboxEBO;
+    glGenVertexArrays(1, &skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glGenBuffers(1, &skyboxEBO);
+
+    glBindVertexArray(skyboxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyboxEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(skyboxIndices), &skyboxIndices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+    glBindVertexArray(0);
+
+    // Carga de las 6 caras (orden CRITICO: right, left, top, bottom, back, front)
+    vector<const GLchar*> faces;
+    faces.push_back("SkyBox/right.jpg");
+    faces.push_back("SkyBox/left.jpg");
+    faces.push_back("SkyBox/top.jpg");
+    faces.push_back("SkyBox/bottom.jpg");
+    faces.push_back("SkyBox/back.jpg");
+    faces.push_back("SkyBox/front.jpg");
+
+    // Llama a la función LoadCubemap
+    GLuint cubemapTexture = TextureLoading::LoadCubemap(faces);
+
+    // Vincular la textura del cubemap al sampler "skybox" en el shader
+    skyboxShader.Use();
+    glUniform1i(glGetUniformLocation(skyboxShader.Program, "skybox"), 0);
+
+
+
 
 
     // -----------------------------------------------------------------
@@ -497,7 +606,7 @@ int main()
     float     fondoCorredorRotY = 0.0f;
 
     // --- NUEVO PISO EXTERIOR ---
-    glm::vec3 pisoFueraPos = glm::vec3(30.0f, 0.7f, 20.0f);
+    glm::vec3 pisoFueraPos = glm::vec3(-50.0f, 0.7f, 20.0f);
     glm::vec3 pisoFueraScale = glm::vec3(1.5f, 1.5f, 1.5f);
     float     pisoFueraRotY = 0.0f;
 
@@ -719,15 +828,10 @@ int main()
 
         // =============================================================
         //   DIBUJO 4: STANDS (tecla L oculta)
-        //   Incluye: stand 1, stand 2 (offset z), stand complejo FBX
         // =============================================================
         if (mostrarStands) {
 
             // ============(   STAND 1: Silla + Mesa + Octanorm   )=================
-            //  Primer set de mobiliario (posicion base).
-            // =====================================================================
-
-            // ---- STAND 1: Silla 1 con Jerarquia ----
             glm::mat4 modelSilla1 = glm::mat4(1.0f);
             modelSilla1 = glm::translate(modelSilla1, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelSilla1));
@@ -747,7 +851,6 @@ int main()
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPatas));
             sillaPatas.Draw(shader1);
 
-            // ---- Mesa 1 ----
             glm::mat4 modelMesa = glm::mat4(1.0f);
             modelMesa = glm::translate(modelMesa, glm::vec3(mesaPosX, mesaPosY, mesaPosZ));
             modelMesa = glm::translate(modelMesa, glm::vec3(8.30f, 1.5f, -1.73f));
@@ -771,7 +874,6 @@ int main()
             p2.Draw(shader1);
 
             if (standsArmados) {
-                // ---- Stand Octanorm 1 -----------------------------------
                 model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, standBase, 0.0f));
                 glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
                 base.Draw(shader1);
@@ -798,10 +900,6 @@ int main()
             }
 
             // ============(   STAND 2: Silla + Mesa + Octanorm (offset Z)   )======
-            //  Segundo set de mobiliario, desplazado en Z.
-            // =====================================================================
-
-            // ---- Silla 2 con Jerarquia ----
             glm::mat4 modelSilla2 = glm::mat4(1.0f);
             modelSilla2 = glm::translate(modelSilla2, glm::vec3(sillaPosX, sillaPosY, sillaPosZ + 4.7f));
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelSilla2));
@@ -821,7 +919,6 @@ int main()
             glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPatas2));
             sillaPatas.Draw(shader1);
 
-            // ---- Mesa 2 ----
             glm::mat4 modelMesa2 = glm::mat4(1.0f);
             modelMesa2 = glm::translate(modelMesa2, glm::vec3(mesaPosX, mesaPosY, mesaPosZ + 3.5f));
             modelMesa2 = glm::translate(modelMesa2, glm::vec3(8.30f, 1.5f, -1.73f));
@@ -845,7 +942,6 @@ int main()
             p2.Draw(shader1);
 
             if (standsArmados) {
-                // ---- Stand Octanorm 2 -----------------------------------
                 model = glm::mat4(1); model = glm::translate(model, glm::vec3(0.0f, standBase, 3.5f));
                 glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
                 base.Draw(shader1);
@@ -871,9 +967,6 @@ int main()
                 panel4.Draw(shader1);
 
                 // ============(   STAND COMPLEJO (FBX con animacion por nodos)   )=====
-                //  Modelo .fbx que se ensambla solo via animacion de nodos.
-                //  La animacion avanza durante los keyframes finales (playIndex >= 3).
-                // =====================================================================
                 standAnimatorNode.SetTime(standAnimTime);
                 auto transforms = standAnimatorNode.GetFinalTransforms();
 
@@ -924,9 +1017,6 @@ int main()
         }
 
         // ============(   LUCES DE TECHO - CUADRICULA 6   )=========================
-        //  6 lamparas en cuadricula 3x2 sobre el patio central.
-        //  ESTE BLOQUE FALTABA - por eso desaparecieron las lamparas.
-        // ==========================================================================
         for (int row = 0; row < 2; row++) {
             for (int col = 0; col < 3; col++) {
                 model = glm::mat4(1);
@@ -951,47 +1041,82 @@ int main()
             luzTecho.Draw(shader1);
         }
         // ============(   FIN LUCES EXTRA   )=======================================
-         // ============(  CRISTAL  )==============
-         shader1.Use();
-         glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 1);
 
-         model = glm::mat4(1);
-         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, -0.14173f));
-         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-         cristal.Draw(shader1);
+        // ============(  CRISTAL  )=================================================
+        shader1.Use();
+        glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 1);
 
-         model = glm::mat4(1);
-         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, 2.015f));
-         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-         cristal.Draw(shader1);
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(16.253f, 2.7417f, -0.14173f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        cristal.Draw(shader1);
 
-         model = glm::mat4(1);
-         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, 3.9932f));
-         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-         cristal.Draw(shader1);
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(16.253f, 2.7417f, 2.015f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        cristal.Draw(shader1);
 
-         model = glm::mat4(1);
-         model = glm::translate(model, glm::vec3(16.253f, 2.7417f, -2.5471f));
-         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.287f));
-         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-         cristal.Draw(shader1);
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(16.253f, 2.7417f, 3.9932f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        cristal.Draw(shader1);
 
-         model = glm::mat4(1);
-         model = glm::translate(model, glm::vec3(17.784f, 2.7417f, -3.9583f));
-         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.397f));
-         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-         cristal.Draw(shader1);
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(16.253f, 2.7417f, -2.5471f));
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.287f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        cristal.Draw(shader1);
 
-         model = glm::mat4(1);
-         model = glm::translate(model, glm::vec3(20.172f, 2.7417f, -3.9583f));
-         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-         cristal.Draw(shader1);
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(17.784f, 2.7417f, -3.9583f));
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.397f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        cristal.Draw(shader1);
 
-         glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 0);
-         // ============(   FIN CRISTAL   )==========================================
-         
+        model = glm::mat4(1);
+        model = glm::translate(model, glm::vec3(20.172f, 2.7417f, -3.9583f));
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
+        cristal.Draw(shader1);
+
+        glUniform1i(glGetUniformLocation(shader1.Program, "transparency"), 0);
+        // ============(   FIN CRISTAL   )==========================================
+
+        // =============================================================
+        //   DIBUJO 6: SKYBOX (cubemap envolvente, sensible al dia/noche)
+        //   IMPORTANTE: se dibuja AL FINAL para que actue como fondo.
+        //   - glDepthFunc(GL_LEQUAL): permite que el skybox se vea detras de todo
+        //   - mat3(view): quita la traslacion, deja solo la rotacion
+        //   - skyTint e intensity: oscurece el skybox de noche,
+        //     calido en la manana, neutro en la tarde
+        // =============================================================
+        glDepthFunc(GL_LEQUAL);
+        skyboxShader.Use();
+
+        // Vista sin traslacion (solo rotacion) para que el skybox parezca infinito
+        glm::mat4 skyboxView = glm::mat4(glm::mat3(view));
+        glUniformMatrix4fv(glGetUniformLocation(skyboxShader.Program, "view"), 1, GL_FALSE, glm::value_ptr(skyboxView));
+        glUniformMatrix4fv(glGetUniformLocation(skyboxShader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(proj));
+
+        // ---- Sensibilidad al dia/tarde/noche: tint del preset actual y la intensidad ----
+        // Usamos "skyTint" para coincidir con nuestro skybox.frag
+        glUniform3f(glGetUniformLocation(skyboxShader.Program, "skyTint"), P.tint.r, P.tint.g, P.tint.b);
+
+        // Agregamos la "intensity" (Asumiendo que preset == 2 es la noche)
+        // Si tienes otra variable que controle la noche, cambiala aquí.
+        float currentIntensity = (currentPreset == 2) ? 0.3f : 1.0f;
+        glUniform1f(glGetUniformLocation(skyboxShader.Program, "intensity"), currentIntensity);
+
+        glBindVertexArray(skyboxVAO);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+
+        glDepthFunc(GL_LESS);   // restaurar para el siguiente frame
+        // ============(   FIN SKYBOX   )===========================================
+
         glBindVertexArray(0);
         glfwSwapBuffers(window);
     }
@@ -1089,7 +1214,7 @@ void Animation() {
 
     if (i_curr_steps >= i_max_steps) {
         if (direccion == 1) {
-            if (playIndex < FrameIndex - 1) {     // con FrameIndex=5, condicion: playIndex < 4
+            if (playIndex < FrameIndex - 1) {
                 playIndex++;
                 i_curr_steps = 0;
                 interpolation();
@@ -1111,7 +1236,6 @@ void Animation() {
         }
     }
     else {
-        // ---- Modelos manuales (silla, mesa, octanorm) ----------------
         sillaPosX += KeyFrame[playIndex].sillaPosXInc * direccion;
         sillaPosY += KeyFrame[playIndex].sillaPosYInc * direccion;
         sillaPosZ += KeyFrame[playIndex].sillaPosZInc * direccion;
@@ -1130,7 +1254,6 @@ void Animation() {
         standBase += KeyFrame[playIndex].standBaseInc * direccion;
         panel += KeyFrame[playIndex].panelInc * direccion;
 
-        // ---- Stand Complejo (FBX) sincronizado con los frames finales ----
         if (globalStandAnimPtr != nullptr) {
             float duration = globalStandAnimPtr->GetDuration();
 
