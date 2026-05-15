@@ -259,7 +259,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 3
-map_Kd Textures/old_concrete-stairs-01_texture.png
+map_Kd C:/stairs_phq2_simless.png
 
 newmtl old_concrete.stairs_metal.01
 Ns 250.000000
@@ -269,5 +269,4 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 3
-map_Kd Textures/old_concrete-stairs-01_texture.png
-
+map_Kd C:/stairs_phq2_simless.png
