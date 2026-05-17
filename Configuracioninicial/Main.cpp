@@ -56,7 +56,7 @@
 #include "Animator.h"
 #include "NodeAnimation.h"
 #include "NodeAnimator.h"
-#include "Texture.h"            // <-- agregado: usa TextureLoading::LoadCubemap
+#include "Texture.h"            
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -94,8 +94,12 @@ bool    spotLightOn = false;
 // ---- Expositor Stand (Saludo por proximidad) ------------------------
 glm::vec3 posExpositorStand = glm::vec3(9.15f, 0.38f, 2.9f);
 float     radioDeteccion = 8.0f;
-
-
+// ---- Animación silla de ruedas --------------------------------------
+float sillaRuedasAnimTime = 0.0f;
+float personaSillaAnimTime = 0.0f;
+bool sillaRuedasPlay = false;
+bool sillaRuedasTerminado = false;
+Animator* globalAnimatorSillaPtr = nullptr;
 // =====================================================================
 // 2.b) MODO FIESTA (luces de colores + musica)
 // =====================================================================
@@ -424,6 +428,7 @@ int main()
     Model persona1((char*)"Models/People/person1.dae");
     Model persona2((char*)"Models/People/person2.dae");
     Model personaSaludo((char*)"Models/People/personWaving.fbx");
+    Model personaSilla((char*)"Models/People/PersonWheelChair.fbx");
 
     ModelAnimation danceAnim("Models/People/person1.dae", persona1.GetBoneInfoMap(), persona1.GetBoneCount());
     Animator       animator(&danceAnim);
@@ -432,6 +437,15 @@ int main()
     ModelAnimation wavingAnim("Models/People/personWaving.fbx", personaSaludo.GetBoneInfoMap(), personaSaludo.GetBoneCount());
     Animator       animatorSaludo(&wavingAnim);
     animatorSaludo.UpdateAnimation(0.0f);
+
+    ModelAnimation personaSillaAnim("Models/People/PersonWheelChair.fbx", personaSilla.GetBoneInfoMap(), personaSilla.GetBoneCount());
+    Animator       animatorSilla(&personaSillaAnim);
+    globalAnimatorSillaPtr = &animatorSilla;
+    //---- Silla de Ruedas ---------------------------------------------
+    Model        sillaRuedasCompleja((char*)"Models/Stands/WheelChair/WheelChairAnimate.fbx");
+    NodeAnimation sillaRuedasAnimNode("Models/Stands/WheelChair/WheelChairAnimate.fbx");
+    NodeAnimator  sillaRuedasAnimatorNode(&sillaRuedasAnimNode);
+
 
 
     // -----------------------------------------------------------------
@@ -785,6 +799,29 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         estatua2.Draw(shader1);
 
+        // -------------------------------------------------------------
+        // SILLA DE RUEDAS
+        // -------------------------------------------------------------
+
+        float sillaDuration = sillaRuedasAnimNode.GetDuration();
+
+        if (sillaRuedasPlay && !sillaRuedasTerminado) {
+            sillaRuedasAnimTime += deltaTime * 30.0f;
+
+            if (sillaRuedasAnimTime >= sillaDuration - 0.02f) {
+                sillaRuedasAnimTime = sillaDuration - 0.02f; 
+                sillaRuedasTerminado = true;         
+                sillaRuedasPlay = false;             
+            }
+        }
+
+        // Enviamos el tiempo exacto al NodeAnimator
+        sillaRuedasAnimatorNode.SetTime(sillaRuedasAnimTime);
+        auto transformsSillaRuedas = sillaRuedasAnimatorNode.GetFinalTransforms();
+
+        glm::mat4 modelSillaRuedasGen = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+        modelSillaRuedasGen = glm::scale(modelSillaRuedasGen, glm::vec3(0.01f));
+        sillaRuedasCompleja.DrawNodeAnimation(shader1, transformsSillaRuedas, modelSillaRuedasGen);
         // =============================================================
         //   DIBUJO 3: PERSONAS CON ESQUELETO ANIMADO
         // =============================================================
@@ -824,13 +861,38 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPersona2));
         persona2.Draw(shader1);
 
+        glm::mat4 modelPersSilla(1.0f);
+        if (sillaRuedasPlay && !sillaRuedasTerminado) {
+            personaSillaAnimTime += deltaTime;
+            animatorSilla.UpdateAnimation(deltaTime);
+            modelPersSilla = glm::mat4(1.0f);
+        }
+        else if (sillaRuedasTerminado) {
+            animatorSilla.UpdateAnimation(0.0f);
+            modelPersSilla = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+        }
+        else {
+            animatorSilla.UpdateAnimation(0.0f);
+            modelPersSilla = glm::mat4(1.0f);
+        }
+        
+        const auto& bonesSilla = animatorSilla.GetFinalBoneMatrices();
+        for (int i = 0; i < 100; i++) {
+            string uName = "finalBonesMatrices[" + to_string(i) + "]";
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, uName.c_str()), 1, GL_FALSE, &bonesSilla[i][0][0]);
+        }
+        modelPersSilla = glm::scale(modelPersSilla, glm::vec3(0.01f));
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPersSilla));
+        personaSilla.Draw(shader1);
+
         glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
+       
 
         // =============================================================
         //   DIBUJO 4: STANDS (tecla L oculta)
         // =============================================================
         if (mostrarStands) {
-
+            shader1.Use();
             // ============(   STAND 1: Silla + Mesa + Octanorm   )=================
             glm::mat4 modelSilla1 = glm::mat4(1.0f);
             modelSilla1 = glm::translate(modelSilla1, glm::vec3(sillaPosX, sillaPosY, sillaPosZ));
@@ -978,6 +1040,7 @@ int main()
                 // ============(   FIN STAND COMPLEJO   )===============================
             }
         }
+       
 
         // =============================================================
         //  DIBUJO 5: EXPOSITOR (Saluda si esta armado y cerca)
@@ -1015,6 +1078,7 @@ int main()
             personaSaludo.Draw(shader1);
             glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
         }
+        
 
         // ============(   LUCES DE TECHO - CUADRICULA 6   )=========================
         for (int row = 0; row < 2; row++) {
@@ -1207,6 +1271,24 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
     }
 
     if (key == GLFW_KEY_L && action == GLFW_PRESS) mostrarStands = !mostrarStands;
+
+    if (key == GLFW_KEY_B && action == GLFW_PRESS) {
+        if (!sillaRuedasTerminado) {
+            sillaRuedasPlay = true; 
+        }
+    }
+
+    if (key == GLFW_KEY_R && action == GLFW_PRESS) {
+        sillaRuedasPlay = false;         
+        sillaRuedasTerminado = false;   
+
+        if (globalAnimatorSillaPtr != nullptr) {
+            globalAnimatorSillaPtr->UpdateAnimation(-(sillaRuedasAnimTime / 30.0f));
+        }
+        sillaRuedasAnimTime = 0.0f;       
+        personaSillaAnimTime = 0.0f;
+    }
+    
 }
 
 void Animation() {
