@@ -100,6 +100,15 @@ float personaSillaAnimTime = 0.0f;
 bool sillaRuedasPlay = false;
 bool sillaRuedasTerminado = false;
 Animator* globalAnimatorSillaPtr = nullptr;
+// ---- Totem ---------------------------------------------------------
+
+float totemTimer = 0.0f;
+int totemTextureIndex = 0;
+const float TOTEM_INTERVAL = 3.5f;
+
+std::vector<GLuint> totemTextures;
+bool totemScreenActive = true;
+
 // =====================================================================
 // 2.b) MODO FIESTA (luces de colores + musica)
 // =====================================================================
@@ -280,6 +289,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 void MouseCallback(GLFWwindow* window, double xPos, double yPos);
 void DoMovement();
 void Animation();
+void TotemScreenAnimation();
 
 inline float mX(float xm) { return (xm - 21.25f) * 0.10f; }
 inline float mZ(float zm) { return -(zm - 13.50f) * 0.10f; }
@@ -418,6 +428,9 @@ int main()
     Model panel2((char*)"Models/Stands/Octanorm/panel2.obj");
     Model panel3((char*)"Models/Stands/Octanorm/panel3.obj");
     Model panel4((char*)"Models/Stands/Octanorm/panel4.obj");
+    // ---- Tótem Informativo ---------------------------
+    Model totemChasis((char*)"Models/Totem/totem_chasis.obj");
+    Model totemPantalla((char*)"Models/Totem/totem_pantalla.obj");
 
     // ---- Stand Complejo (FBX con animacion por nodos) ---------------
     Model         standComplejo((char*)"Models/Stands/Complex1/StandComplex1.fbx");
@@ -486,7 +499,12 @@ int main()
     skyboxShader.Use();
     glUniform1i(glGetUniformLocation(skyboxShader.Program, "skybox"), 0);
 
-
+    // ---- Carga de Imágenes para la Pantalla del Tótem -----------------
+    totemTextures.push_back(TextureLoading::LoadTexture((char*)"Models/Totem/TexturasTotem/1.png"));
+    totemTextures.push_back(TextureLoading::LoadTexture((char*)"Models/Totem/TexturasTotem/2.jpg"));
+    totemTextures.push_back(TextureLoading::LoadTexture((char*)"Models/Totem/TexturasTotem/3.png"));
+    totemTextures.push_back(TextureLoading::LoadTexture((char*)"Models/Totem/TexturasTotem/4.jpg"));
+    totemTextures.push_back(TextureLoading::LoadTexture((char*)"Models/Totem/TexturasTotem/5.jpg"));
 
 
 
@@ -642,6 +660,7 @@ int main()
         glfwPollEvents();
         DoMovement();
         Animation();
+        TotemScreenAnimation();
 
         // ---- a.1) ACTUALIZAR MODO FIESTA (rotacion de colores) ------
         if (fiestaMode) {
@@ -749,6 +768,50 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
         reja.Draw(shader1);
 
+        // ---- Totem -------------------------------------------------
+        shader1.Use();
+        glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
+
+        glm::mat4 modelTotem = glm::mat4(1.0f);
+        modelTotem = glm::translate(modelTotem, glm::vec3(6.4653f, 0.3875f, -4.2682f));
+        modelTotem = glm::rotate(modelTotem, glm::radians(-90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        modelTotem = glm::scale(modelTotem, glm::vec3(1.5f));
+
+        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelTotem));
+        glUniform1i(glGetUniformLocation(shader1.Program, "isTotemScreen"), GL_FALSE);
+
+        // 1. Dibujamos la estructura del Tótem
+        totemChasis.Draw(shader1);
+
+        // 2. Control de la pantalla por Tecla 0 (Independiente de la hora del día)
+        if (totemScreenActive && !totemTextures.empty()) {
+            glUniform1i(glGetUniformLocation(shader1.Program, "isTotemScreen"), GL_TRUE);
+
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, totemTextures[totemTextureIndex]);
+            glUniform1i(glGetUniformLocation(shader1.Program, "totemScreenTex"), 2);
+
+            // ---- EFECTO DE EMANACIÓN DE LUZ ----
+            if (currentPreset == 2) {
+                // Si es de noche, multiplicamos el brillo (1.4f) para que la pantalla 
+                // "brille" con luz propia (emisión) y resalte con fuerza en la oscuridad.
+                glUniform3f(glGetUniformLocation(shader1.Program, "tintColor"), 1.4f, 1.4f, 1.4f);
+            }
+            else if (currentPreset == 0) {
+                // Si es la tarde/mañana opaca, le damos un boost ligero
+                glUniform3f(glGetUniformLocation(shader1.Program, "tintColor"), 1.2f, 1.2f, 1.2f);
+            }
+            else {
+                // De tarde/día normal se ve con sus colores reales nativos
+                glUniform3f(glGetUniformLocation(shader1.Program, "tintColor"), 1.0f, 1.0f, 1.0f);
+            }
+
+            totemPantalla.Draw(shader1);
+        }
+
+        // Limpieza de estados para el resto de los modelos del loop
+        glUniform1i(glGetUniformLocation(shader1.Program, "isTotemScreen"), GL_FALSE);
+        glUniform3f(glGetUniformLocation(shader1.Program, "tintColor"), P.tint.r, P.tint.g, P.tint.b);
         // ============(   FONDO_FINAL (escala y posicion editables)   )=============
         model = glm::mat4(1);
         model = glm::translate(model, fondoPos);
@@ -1246,6 +1309,9 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
     if (key == GLFW_KEY_1 && action == GLFW_PRESS) currentPreset = 0;
     if (key == GLFW_KEY_2 && action == GLFW_PRESS) currentPreset = 1;
     if (key == GLFW_KEY_3 && action == GLFW_PRESS) currentPreset = 2;
+    if (key == GLFW_KEY_0 && action == GLFW_PRESS) {
+        totemScreenActive = !totemScreenActive;
+    }
 
     // ---- TECLA G: MODO FIESTA --------------------------------------
     if (key == GLFW_KEY_G && action == GLFW_PRESS) {
@@ -1381,5 +1447,18 @@ void Animation() {
         }
 
         i_curr_steps++;
+    }
+}
+void TotemScreenAnimation() {
+    // Si por alguna razón no cargaron las texturas, nos salimos para evitar tronidos
+    if (totemTextures.empty()) return;
+
+    // La máquina de estados avanza acumulando el deltaTime real del programa
+    totemTimer += deltaTime;
+
+    if (totemTimer >= TOTEM_INTERVAL) {
+        totemTimer = 0.0f;
+        // Saltamos al siguiente estado (siguiente imagen) en un loop infinito circular
+        totemTextureIndex = (totemTextureIndex + 1) % totemTextures.size();
     }
 }
