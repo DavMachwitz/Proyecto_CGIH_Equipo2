@@ -246,8 +246,8 @@ NodeAnimation* globalStandAnimPtr = nullptr;
 float          rotY = -90.0f;
 
 // ---- Personas (movimiento manual, no por keyframes) -----------------
-glm::vec3 personaPos = glm::vec3(0.0f, 0.2f, -130.0f);
-glm::vec3 personaPos2 = glm::vec3(0.0f, 0.2f, 130.0f);
+glm::vec3 personaPos = glm::vec3(2.0f, 0.2f, -180.0f);
+glm::vec3 personaPos2 = glm::vec3(0.0f, 0.2f, 180.0f);
 //glm::vec3 simiPos = glm::vec3(4.0f, 0.2f, 65.0f);
 float     personaSpeed = 1.0f;
 float     personaDirZ = 1.0f;
@@ -444,6 +444,7 @@ int main()
     Model personaSaludo((char*)"Models/People/personWaving.fbx");
     Model personaSilla((char*)"Models/People/PersonWheelChair.fbx");
 	Model simi((char*)"Models/People/simi.dae");
+	Model simiSaludo((char*)"Models/People/simi2.dae");
 
     ModelAnimation danceAnim("Models/People/person1.dae", persona1.GetBoneInfoMap(), persona1.GetBoneCount());
     Animator       animator(&danceAnim);
@@ -463,7 +464,8 @@ int main()
     //------------ Modelo Botarga Dr simi ----------------
 	ModelAnimation danceAnim3("Models/People/simi.dae", simi.GetBoneInfoMap(), simi.GetBoneCount());
 	Animator       animatorSimi(&danceAnim3);
-
+	ModelAnimation simiSaludoAnim("Models/People/simi2.dae", simi.GetBoneInfoMap(), simi.GetBoneCount());
+	Animator	   animatorSimiSaludo(&simiSaludoAnim);
 
     // -----------------------------------------------------------------
     // 8.b) SETUP DEL SKYBOX (VAO/VBO/EBO + carga del cubemap)
@@ -944,20 +946,34 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPersSilla));
         personaSilla.Draw(shader1);
         //-------------Dibujo botarga Dr Simi-----------
-        animatorSimi.UpdateAnimation(deltaTime);
-        const auto& bonessimi = animatorSimi.GetFinalBoneMatrices();
-        for (int i = 0; i < 100; i++) {
-            string uName = "finalBonesMatrices[" + to_string(i) + "]";
-            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, uName.c_str()), 1, GL_FALSE, &bonessimi[i][0][0]);
+        if (fiestaMode) {
+            animatorSimi.UpdateAnimation(deltaTime);
+            const auto& bonessimi = animatorSimi.GetFinalBoneMatrices();
+            for (int i = 0; i < 100; i++) {
+                string uName = "finalBonesMatrices[" + to_string(i) + "]";
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, uName.c_str()), 1, GL_FALSE, &bonessimi[i][0][0]);
+            }
+            glm::mat4 modelPersona3 = glm::mat4(1.0f);
+            modelPersona3 = glm::translate(modelPersona3, glm::vec3(-2.0f, 0.3f, 7.0f));
+            modelPersona3 = glm::scale(modelPersona3, glm::vec3(20.0f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPersona3));
+            simi.Draw(shader1);
+            glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
         }
-        glm::mat4 modelPersona3 = glm::mat4(1.0f);
-        modelPersona3 = glm::translate(modelPersona3, glm::vec3(5.0f, 0.3f, 3.5f));
-        modelPersona3 = glm::scale(modelPersona3, glm::vec3(20.0f));
-        glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPersona3));
-        simi.Draw(shader1);
-        glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
-       
-
+        else {
+            animatorSimiSaludo.UpdateAnimation(deltaTime);
+            const auto& bonessimi = animatorSimiSaludo.GetFinalBoneMatrices();
+            for (int i = 0; i < 100; i++) {
+                string uName = "finalBonesMatrices[" + to_string(i) + "]";
+                glUniformMatrix4fv(glGetUniformLocation(shader1.Program, uName.c_str()), 1, GL_FALSE, &bonessimi[i][0][0]);
+            }
+            glm::mat4 modelPersona4 = glm::mat4(1.0f);
+            modelPersona4 = glm::translate(modelPersona4, glm::vec3(-2.0f, 0.3f, 7.0f));
+            modelPersona4 = glm::scale(modelPersona4, glm::vec3(20.0f));
+            glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPersona4));
+            simiSaludo.Draw(shader1);
+            glUniform1i(glGetUniformLocation(shader1.Program, "useSkinning"), GL_FALSE);
+        }
         // =============================================================
         //   DIBUJO 4: STANDS (tecla L oculta)
         // =============================================================
