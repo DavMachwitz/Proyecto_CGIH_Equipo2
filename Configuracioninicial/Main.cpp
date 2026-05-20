@@ -780,10 +780,8 @@ int main()
         glUniformMatrix4fv(glGetUniformLocation(shader1.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelTotem));
         glUniform1i(glGetUniformLocation(shader1.Program, "isTotemScreen"), GL_FALSE);
 
-        // 1. Dibujamos la estructura del Tótem
         totemChasis.Draw(shader1);
 
-        // 2. Control de la pantalla por Tecla 0 (Independiente de la hora del día)
         if (totemScreenActive && !totemTextures.empty()) {
             glUniform1i(glGetUniformLocation(shader1.Program, "isTotemScreen"), GL_TRUE);
 
@@ -791,25 +789,19 @@ int main()
             glBindTexture(GL_TEXTURE_2D, totemTextures[totemTextureIndex]);
             glUniform1i(glGetUniformLocation(shader1.Program, "totemScreenTex"), 2);
 
-            // ---- EFECTO DE EMANACIÓN DE LUZ ----
             if (currentPreset == 2) {
-                // Si es de noche, multiplicamos el brillo (1.4f) para que la pantalla 
-                // "brille" con luz propia (emisión) y resalte con fuerza en la oscuridad.
                 glUniform3f(glGetUniformLocation(shader1.Program, "tintColor"), 1.4f, 1.4f, 1.4f);
             }
             else if (currentPreset == 0) {
-                // Si es la tarde/mañana opaca, le damos un boost ligero
                 glUniform3f(glGetUniformLocation(shader1.Program, "tintColor"), 1.2f, 1.2f, 1.2f);
             }
             else {
-                // De tarde/día normal se ve con sus colores reales nativos
                 glUniform3f(glGetUniformLocation(shader1.Program, "tintColor"), 1.0f, 1.0f, 1.0f);
             }
 
             totemPantalla.Draw(shader1);
         }
 
-        // Limpieza de estados para el resto de los modelos del loop
         glUniform1i(glGetUniformLocation(shader1.Program, "isTotemScreen"), GL_FALSE);
         glUniform3f(glGetUniformLocation(shader1.Program, "tintColor"), P.tint.r, P.tint.g, P.tint.b);
         // ============(   FONDO_FINAL (escala y posicion editables)   )=============
@@ -1450,15 +1442,13 @@ void Animation() {
     }
 }
 void TotemScreenAnimation() {
-    // Si por alguna razón no cargaron las texturas, nos salimos para evitar tronidos
     if (totemTextures.empty()) return;
 
-    // La máquina de estados avanza acumulando el deltaTime real del programa
+
     totemTimer += deltaTime;
 
     if (totemTimer >= TOTEM_INTERVAL) {
         totemTimer = 0.0f;
-        // Saltamos al siguiente estado (siguiente imagen) en un loop infinito circular
         totemTextureIndex = (totemTextureIndex + 1) % totemTextures.size();
     }
 }
